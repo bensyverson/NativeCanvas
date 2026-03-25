@@ -295,6 +295,52 @@ struct CanvasBridgeGradientTests {
         #expect(pixel.r < 0.3)
     }
 
+    // MARK: - Alpha-transparent gradient stops
+
+    @Test("Radial gradient with alpha=0 outer stop leaves transparent pixels outside radius")
+    func radialGradientTransparentOuter() throws {
+        let bridge = CanvasBridge(width: 20, height: 20)
+        let gradient = bridge.createRadialGradient(x0: 10, y0: 10, r0: 0, x1: 10, y1: 10, r1: 5)
+        let cs = bridge.colorSpace
+        try gradient.addColorStop(offset: 0, color: #require(CGColor(colorSpace: cs, components: [1, 1, 1, 0.5])))
+        try gradient.addColorStop(offset: 1, color: #require(CGColor(colorSpace: cs, components: [1, 1, 1, 0])))
+        bridge.fillGradient = gradient
+        bridge.fillRect(x: 0, y: 0, width: 20, height: 20)
+
+        guard let image = bridge.makeImage() else {
+            Issue.record("Failed to create image"); return
+        }
+
+        // Center should be semi-transparent white
+        let center = pixelColor(at: 10, y: 10, in: image)
+        #expect(center.a > 0.2, "Center should have visible alpha")
+
+        // Far corner (outside gradient radius) should be fully transparent
+        let corner = pixelColor(at: 0, y: 0, in: image)
+        #expect(isClose(corner.a, 0.0, tolerance: 0.05), "Outside gradient radius should be transparent, got \(corner.a)")
+    }
+
+    @Test("Linear gradient with semi-transparent stops renders with partial alpha")
+    func linearGradientSemiTransparent() throws {
+        let bridge = CanvasBridge(width: 20, height: 10)
+        let gradient = bridge.createLinearGradient(x0: 0, y0: 0, x1: 20, y1: 0)
+        let cs = bridge.colorSpace
+        try gradient.addColorStop(offset: 0, color: #require(CGColor(colorSpace: cs, components: [0, 0, 1, 0.8])))
+        try gradient.addColorStop(offset: 1, color: #require(CGColor(colorSpace: cs, components: [0, 0, 1, 0])))
+        bridge.fillGradient = gradient
+        bridge.fillRect(x: 0, y: 0, width: 20, height: 10)
+
+        guard let image = bridge.makeImage() else {
+            Issue.record("Failed to create image"); return
+        }
+
+        let left = pixelColor(at: 1, y: 5, in: image)
+        #expect(left.a > 0.5, "Left edge should be mostly opaque, got \(left.a)")
+
+        let right = pixelColor(at: 18, y: 5, in: image)
+        #expect(right.a < 0.3, "Right edge should be mostly transparent, got \(right.a)")
+    }
+
     // MARK: - JS Gradient Integration
 
     @Test("JS gradient creation and fill")

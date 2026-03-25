@@ -8,6 +8,7 @@ import SwiftUI
 struct SourceEditorView: View {
     @Environment(DocumentCoordinator.self) private var coordinator
     @State private var source: String = ""
+    @State private var scanPhase: CGFloat = 0
 
     private var statusColor: Color {
         guard coordinator.jsScript != nil else { return .secondary }
@@ -37,16 +38,45 @@ struct SourceEditorView: View {
 
             Divider()
 
-            #if os(macOS)
-            CodeEditorView(text: $source)
-            #else
-            TextEditor(text: $source)
-                .font(.system(.body, design: .monospaced))
-                .autocorrectionDisabled()
-                .textInputAutocapitalization(.never)
-                .scrollContentBackground(.hidden)
-                .background(.background)
-            #endif
+            ZStack {
+                #if os(macOS)
+                    CodeEditorView(
+                        text: $source,
+                        errorLine: coordinator.renderErrorLine,
+                        highlightRange: coordinator.scriptHighlight?.lineRange,
+                    )
+                #else
+                    TextEditor(text: $source)
+                        .font(.system(.body, design: .monospaced))
+                        .autocorrectionDisabled()
+                        .textInputAutocapitalization(.never)
+                        .scrollContentBackground(.hidden)
+                        .background(.background)
+                #endif
+
+                // Scan effect when agent reads the script
+                if coordinator.isScanningScript {
+                    LinearGradient(
+                        stops: [
+                            .init(color: .clear, location: 0),
+                            .init(color: Color.blue.opacity(0.15), location: 0.45),
+                            .init(color: Color.blue.opacity(0.30), location: 0.5),
+                            .init(color: Color.blue.opacity(0.15), location: 0.55),
+                            .init(color: .clear, location: 1),
+                        ],
+                        startPoint: .top,
+                        endPoint: .bottom,
+                    )
+                    .offset(y: (scanPhase - 0.5) * 600)
+                    .allowsHitTesting(false)
+                    .onAppear {
+                        withAnimation(.linear(duration: 1.0).repeatForever(autoreverses: false)) {
+                            scanPhase = 1
+                        }
+                    }
+                    .onDisappear { scanPhase = 0 }
+                }
+            }
         }
         .onAppear {
             source = coordinator.jsScript ?? ""

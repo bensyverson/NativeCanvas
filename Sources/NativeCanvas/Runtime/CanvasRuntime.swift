@@ -8,20 +8,26 @@ import JavaScriptCore
 
 /// Errors that can occur during canvas engine operations.
 public nonisolated enum CanvasError: Error, LocalizedError, CustomStringConvertible {
-    /// A JavaScript evaluation failed with the given message.
-    case evaluationFailed(String)
+    /// A JavaScript evaluation failed with the given message and optional source location.
+    case evaluationFailed(String, line: Int?, column: Int?)
     /// A required export (e.g. "schema" or "layers") was not found in the template.
     case missingExport(String)
     /// The `layers` export is not an array or is empty.
     case invalidLayers
 
-    public var errorDescription: String? { description }
+    public var errorDescription: String? {
+        description
+    }
 
     public var description: String {
         switch self {
-        case let .evaluationFailed(message): "Evaluation failed: \(message)"
-        case let .missingExport(name): "Missing required export: \(name)"
-        case .invalidLayers: "layers must be a non-empty array"
+        case let .evaluationFailed(message, line: line, column: _):
+            if let line {
+                return "Evaluation failed: \(message) (line \(line))"
+            }
+            return "Evaluation failed: \(message)"
+        case let .missingExport(name): return "Missing required export: \(name)"
+        case .invalidLayers: return "layers must be a non-empty array"
         }
     }
 }
@@ -72,8 +78,8 @@ public final nonisolated class CanvasRuntime {
     /// Canvas height in pixels.
     public let viewportHeight: Int
 
-    /// The last JS exception message, captured by the exception handler.
-    private var lastException: String?
+    /// The last JS exception captured by the exception handler.
+    private var lastException: (message: String, line: Int?, column: Int?)?
 
     /// Creates a new runtime with a sandboxed JSContext.
     ///
@@ -86,9 +92,18 @@ public final nonisolated class CanvasRuntime {
         viewportHeight = height
         jsContext = JSContext()!
 
-        // Capture exceptions
+        // Capture exceptions with source location
         jsContext.exceptionHandler = { [weak self] _, exception in
-            self?.lastException = exception?.toString()
+            let message = exception?.toString() ?? "Unknown error"
+            let line: Int? = exception?.forProperty("line").flatMap { v in
+                guard !v.isUndefined, !v.isNull else { return nil }
+                return Int(v.toInt32())
+            }
+            let column: Int? = exception?.forProperty("column").flatMap { v in
+                guard !v.isUndefined, !v.isNull else { return nil }
+                return Int(v.toInt32())
+            }
+            self?.lastException = (message, line, column)
         }
 
         // Sandbox: remove dangerous globals
@@ -135,9 +150,12 @@ public final nonisolated class CanvasRuntime {
 
     /// Loads a template from source, returning layer info.
     ///
+    /// `schema` is optional. If omitted the template name defaults to `"Untitled"`
+    /// and `defaultParams` will be an empty object. `layers` remains required.
+    ///
     /// - Parameter source: The raw template JavaScript source
     /// - Returns: A ``CanvasTemplate`` with extracted metadata
-    /// - Throws: ``CanvasError`` if evaluation fails or required exports are missing
+    /// - Throws: ``CanvasError`` if evaluation fails or `layers` is missing/invalid
     public func loadTemplate(source: String) throws -> CanvasTemplate {
         lastException = nil
 
@@ -146,15 +164,16 @@ public final nonisolated class CanvasRuntime {
         jsContext.evaluateScript(preprocessed)
 
         if let exception = lastException {
-            throw CanvasError.evaluationFailed(exception)
+            throw CanvasError.evaluationFailed(exception.message, line: exception.line, column: exception.column)
         }
 
-        // Extract schema
-        guard let schema = jsContext.objectForKeyedSubscript("schema"),
-              !schema.isUndefined, !schema.isNull
-        else {
-            throw CanvasError.missingExport("schema")
-        }
+        // Extract schema (optional)
+        let schema: JSValue? = {
+            guard let v = jsContext.objectForKeyedSubscript("schema"),
+                  !v.isUndefined, !v.isNull
+            else { return nil }
+            return v
+        }()
 
         // Extract layers
         guard let layersValue = jsContext.objectForKeyedSubscript("layers"),
@@ -190,25 +209,24 @@ public final nonisolated class CanvasRuntime {
 
         // Extract default param values from schema.params
         let defaultParams = JSValue(newObjectIn: jsContext)!
-        if let schemaParams = schema.forProperty("params"),
-           !schemaParams.isUndefined, !schemaParams.isNull
+        if let schema,
+           let schemaParams = schema.forProperty("params"),
+           !schemaParams.isUndefined, !schemaParams.isNull,
+           let keys = jsContext.evaluateScript("Object.keys(schema.params)"),
+           keys.isArray
         {
-            if let keys = jsContext.evaluateScript("Object.keys(schema.params)"),
-               keys.isArray
-            {
-                let keyCount = keys.forProperty("length")?.toInt32() ?? 0
-                for i in 0 ..< Int(keyCount) {
-                    let key = keys.atIndex(i)!.toString()!
-                    let paramDef = schemaParams.forProperty(key)!
-                    let defaultVal = paramDef.forProperty("default")
-                    if let defaultVal, !defaultVal.isUndefined {
-                        defaultParams.setValue(defaultVal, forProperty: key)
-                    }
+            let keyCount = keys.forProperty("length")?.toInt32() ?? 0
+            for i in 0 ..< Int(keyCount) {
+                let key = keys.atIndex(i)!.toString()!
+                let paramDef = schemaParams.forProperty(key)!
+                let defaultVal = paramDef.forProperty("default")
+                if let defaultVal, !defaultVal.isUndefined {
+                    defaultParams.setValue(defaultVal, forProperty: key)
                 }
             }
         }
 
-        let name = schema.forProperty("name")?.toString() ?? "Untitled"
+        let name = schema?.forProperty("name")?.toString() ?? "Untitled"
 
         return CanvasTemplate(
             name: name,

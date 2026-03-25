@@ -509,12 +509,56 @@ public final nonisolated class CanvasBridge {
         guard let cgGradient = gradient.makeCGGradient(in: colorSpace) else { return }
         let options: CGGradientDrawingOptions = [.drawsBeforeStartLocation, .drawsAfterEndLocation]
 
+        // PDF gradient shadings (Type 2/3) encode only device color values — the
+        // alpha channel in color stops is silently dropped. When any stop has alpha < 1
+        // and we're not in a bitmap context, render the gradient into an offscreen
+        // bitmap and draw the result as an image so transparency composites correctly.
+        let hasTransparentStop = gradient.stops.contains {
+            ($0.color.components?.last ?? 1.0) < 1.0
+        }
+        if hasTransparentStop, cgContext.makeImage() == nil {
+            drawGradientOffscreen(gradient, cgGradient: cgGradient, options: options)
+            return
+        }
+
         switch gradient.type {
         case .linear:
             cgContext.drawLinearGradient(cgGradient, start: gradient.startPoint, end: gradient.endPoint, options: options)
         case .radial:
             cgContext.drawRadialGradient(cgGradient, startCenter: gradient.startPoint, startRadius: gradient.startRadius, endCenter: gradient.endPoint, endRadius: gradient.endRadius, options: options)
         }
+    }
+
+    /// Renders a gradient with transparent stops into an offscreen DeviceRGB bitmap,
+    /// then composites the result into the current context as an image.
+    /// This preserves the current clip (which is in device space) while correctly
+    /// rendering alpha values that PDF shading functions cannot express.
+    private func drawGradientOffscreen(_ gradient: CanvasGradient, cgGradient: CGGradient, options: CGGradientDrawingOptions) {
+        let bitmapInfo = CGBitmapInfo(rawValue: CGImageAlphaInfo.premultipliedLast.rawValue)
+        guard let offCtx = CGContext(
+            data: nil, width: width, height: height,
+            bitsPerComponent: 8, bytesPerRow: width * 4,
+            space: CGColorSpaceCreateDeviceRGB(), bitmapInfo: bitmapInfo.rawValue,
+        ) else { return }
+
+        // Apply the real context's full CTM so gradient coordinates map correctly.
+        offCtx.concatenate(cgContext.ctm)
+
+        switch gradient.type {
+        case .linear:
+            offCtx.drawLinearGradient(cgGradient, start: gradient.startPoint, end: gradient.endPoint, options: options)
+        case .radial:
+            offCtx.drawRadialGradient(cgGradient, startCenter: gradient.startPoint, startRadius: gradient.startRadius, endCenter: gradient.endPoint, endRadius: gradient.endRadius, options: options)
+        }
+
+        guard let image = offCtx.makeImage() else { return }
+
+        // Draw the image in device space. The clip set by fillRect/fill is stored
+        // in device space, so it still masks correctly after resetting the CTM.
+        cgContext.saveGState()
+        cgContext.concatenate(cgContext.ctm.inverted())
+        cgContext.draw(image, in: CGRect(x: 0, y: 0, width: width, height: height))
+        cgContext.restoreGState()
     }
 
     private func applyState() {

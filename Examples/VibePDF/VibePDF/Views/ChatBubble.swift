@@ -29,10 +29,10 @@ struct ChatBubble: View {
                     systemImage: "chevron.right",
                 ).font(.caption)
                     .foregroundStyle(.secondary)
-					.padding(.vertical, 2)
-					.padding(.horizontal, 10)
-					.background(.regularMaterial)
-					.clipShape(.capsule)
+                    .padding(.vertical, 2)
+                    .padding(.horizontal, 10)
+                    .background(.regularMaterial)
+                    .clipShape(.capsule)
                 Spacer()
             }
         case .system:
@@ -40,11 +40,22 @@ struct ChatBubble: View {
                 Text(message.text)
                     .font(.caption)
                     .italic()
-					.foregroundStyle(.secondary)
-					.padding(.vertical, 2)
-					.padding(.horizontal, 10)
-					.background(.regularMaterial)
-					.clipShape(.capsule)
+                    .foregroundStyle(.secondary)
+                    .padding(.vertical, 2)
+                    .padding(.horizontal, 10)
+                    .background(.regularMaterial)
+                    .clipShape(.capsule)
+                Spacer()
+            }
+        case .error:
+            HStack {
+                Label(message.text, systemImage: "exclamationmark.triangle.fill")
+                    .font(.caption)
+                    .foregroundStyle(.white)
+                    .padding(.vertical, 4)
+                    .padding(.horizontal, 10)
+                    .background(Color.red.opacity(0.75))
+                    .clipShape(.capsule)
                 Spacer()
             }
         }
@@ -64,19 +75,27 @@ struct ChatBubble: View {
     }
 
     private func bubbleText(_ text: String) -> some View {
-        Text(text)
+        Text(Self.attributed(text.trimmingCharacters(in: .whitespacesAndNewlines)))
             .frame(maxWidth: 400, alignment: .leading)
             .padding(.horizontal, 12)
             .padding(.vertical, 8)
+    }
+
+    private static func attributed(_ text: String) -> AttributedString {
+        let options = AttributedString.MarkdownParsingOptions(
+            interpretedSyntax: .inlineOnlyPreservingWhitespace,
+        )
+        return (try? AttributedString(markdown: text, options: options)) ?? AttributedString(text)
     }
 }
 
 #Preview {
     VStack(spacing: 8) {
         ChatBubble(message: ChatMessage(id: UUID(), role: .user, text: "Draw a red circle on white background"))
-        ChatBubble(message: ChatMessage(id: UUID(), role: .agent, text: "I'll create that for you now."))
+        ChatBubble(message: ChatMessage(id: UUID(), role: .agent, text: "I'll create that for you now. Used **nc.roundRect** with `r: 20` and set `fillStyle` to red."))
         ChatBubble(message: ChatMessage(id: UUID(), role: .toolCall, text: "write_script", toolName: "write_script"))
         ChatBubble(message: ChatMessage(id: UUID(), role: .system, text: "Session started"))
+        ChatBubble(message: ChatMessage(id: UUID(), role: .error, text: "Rate limit exceeded. Please try again."))
     }
     .padding()
     .background(Color.black.opacity(0.6))

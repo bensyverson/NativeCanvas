@@ -40,6 +40,14 @@ enum ProviderOption: String, CaseIterable, Friendly {
         }
     }
 
+    /// Whether this provider uses the quality tier picker instead of a free-form model name.
+    var supportsTierSelection: Bool {
+        switch self {
+        case .openRouter, .lmStudio, .appleIntelligence: false
+        default: true
+        }
+    }
+
     /// Whether this provider supports vision for a given model name.
     func supportsVision(modelName: String) -> Bool {
         switch self {

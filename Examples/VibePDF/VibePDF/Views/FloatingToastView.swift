@@ -14,6 +14,10 @@ struct FloatingToastView: View {
         coordinator.isAgentRunning && visibleText == nil
     }
 
+    private var thinkingLabel: String {
+        coordinator.messages.last?.role == .toolCall ? "Working…" : "Thinking…"
+    }
+
     var body: some View {
         VStack {
             Spacer()
@@ -24,42 +28,41 @@ struct FloatingToastView: View {
                     .padding(.vertical, 12)
                     .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 20))
                     .padding(.horizontal, 24)
-                    .padding(.bottom, 72)
+                    .padding(.bottom, 8)
                     .frame(minWidth: 50, maxWidth: 400)
                     .transition(.move(edge: .top).combined(with: .opacity))
             } else if showThinking {
-                HStack(spacing: 8) {
-                    ProgressView()
-                        .controlSize(.small)
-                    Text("Thinking…")
-                        .foregroundStyle(.secondary)
-                }
-                .padding(.horizontal, 16)
-                .padding(.vertical, 12)
-                .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 20))
-                .padding(.bottom, 72)
-                .transition(.move(edge: .top).combined(with: .opacity))
+                ThinkingBubble(label: thinkingLabel)
+                    .padding(.bottom, 8)
+                    .transition(.move(edge: .top).combined(with: .opacity))
             }
         }
         .animation(.easeInOut(duration: 0.3), value: visibleText)
         .animation(.easeInOut(duration: 0.3), value: showThinking)
+        // When the agent starts running, immediately clear any stale toast so
+        // the ThinkingBubble can appear without waiting for a messages change.
+        .onChange(of: coordinator.isAgentRunning) { _, running in
+            if running {
+                cancelAndClear()
+            } else if let last = coordinator.messages.last(where: { $0.role == .agent }) {
+                // Agent finished — show final message then auto-dismiss.
+                visibleText = last.text.trimmingCharacters(in: .whitespacesAndNewlines)
+                scheduleDismiss()
+            }
+        }
+        // While running, keep the toast in sync with the streaming agent message.
         .onChange(of: coordinator.messages) { _, messages in
-            // If the user just sent a message, clear any lingering toast.
-            if messages.last?.role == .user {
+            guard coordinator.isAgentRunning else { return }
+            // Tool calls clear the toast so the ThinkingBubble can show.
+            if let last = messages.last, last.role == .toolCall {
                 cancelAndClear()
                 return
             }
-
-            guard let agentMsg = messages.last(where: { $0.role == .agent }) else { return }
-
-            // Cancel any pending dismiss — new content is arriving.
+            guard let agentMsg = messages.last(where: { $0.role == .agent }),
+                  agentMsg.isStreaming else { return }
             dismissTask?.cancel()
             dismissTask = nil
-            visibleText = agentMsg.text
-
-            if !agentMsg.isStreaming {
-                scheduleDismiss()
-            }
+            visibleText = agentMsg.text.trimmingCharacters(in: .whitespacesAndNewlines)
         }
     }
 
@@ -71,7 +74,7 @@ struct FloatingToastView: View {
 
     private func scheduleDismiss() {
         dismissTask = Task {
-            try? await Task.sleep(for: .seconds(2.5))
+            try? await Task.sleep(for: .seconds(8))
             guard !Task.isCancelled else { return }
             withAnimation { visibleText = nil }
         }

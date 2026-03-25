@@ -1,5 +1,5 @@
 {
-  "originHash" : "a1b97791551d4bae3885e1f0ec0a8580fa1eef2674e266a25f449f4e0e0371df",
+  "originHash" : "d88a0a8b6cb7cb36a5dae410c39b3ef6eddd7ee5923816bb7f2e6c532f58c5a4",
   "pins" : [
     {
       "identity" : "async-http-client",
@@ -17,6 +17,15 @@
       "state" : {
         "revision" : "a3a85a85214caf642abaa96ae664e4c772a59f6e",
         "version" : "1.4.1"
+      }
+    },
+    {
+      "identity" : "keymanager",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/bensyverson/KeyManager",
+      "state" : {
+        "branch" : "main",
+        "revision" : "a754dbd1e650d6aa70ed19f53f3576c9786a88fa"
       }
     },
     {

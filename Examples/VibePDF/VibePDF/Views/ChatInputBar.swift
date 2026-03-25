@@ -8,6 +8,12 @@ import SwiftUI
 struct ChatInputBar: View {
     @Environment(DocumentCoordinator.self) private var coordinator
     @Binding var inputText: String
+    @FocusState private var focused: Bool
+    @State private var showKeyAlert = false
+
+    private var isLocked: Bool {
+        !coordinator.settings.hasAPIKey
+    }
 
     var body: some View {
         HStack(spacing: 12) {
@@ -26,6 +32,7 @@ struct ChatInputBar: View {
                     sendMessage()
                 }
                 .controlSize(.large)
+                .focused($focused)
 
             Button {
                 if coordinator.isAgentRunning {
@@ -49,9 +56,20 @@ struct ChatInputBar: View {
         .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 26))
         .padding(.horizontal, 16)
         .padding(.bottom, 12)
+        .onAppear { focused = true }
+        .alert("API Key Required", isPresented: $showKeyAlert) {
+            Button("OK") {}
+        } message: {
+            Text("Enter an API key for \(coordinator.settings.provider.displayName) in Settings to start chatting.")
+        }
     }
 
     private func sendMessage() {
+        guard !isLocked else {
+            coordinator.showSidebar = true
+            showKeyAlert = true
+            return
+        }
         guard !inputText.isEmpty else { return }
         let text = inputText
         inputText = ""

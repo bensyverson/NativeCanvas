@@ -243,37 +243,33 @@ public nonisolated enum CanvasStandardLibrary {
     private static func installTypographyBridges(into jsContext: JSContext) {
         guard let nc = jsContext.objectForKeyedSubscript("nc") else { return }
 
-        // measureText(text, fontFamily, size) → {width, height}
-        let measureBlock: @convention(block) (String, String, Double) -> [String: Double] = { text, fontFamily, size in
-            let fontString = "\(Int(size))px \(fontFamily)"
+        // measureText(text, font) → {width, height}
+        // font is a full CSS font string, e.g. 'bold 32px "Georgia"'
+        let measureBlock: @convention(block) (String, String) -> [String: Double] = { text, fontString in
             let ctFont = CanvasFontParser.parse(fontString)
             let attrs: [NSAttributedString.Key: Any] = [.font: ctFont]
             let attrString = NSAttributedString(string: text, attributes: attrs)
             let line = CTLineCreateWithAttributedString(attrString)
-
             var ascent: CGFloat = 0
             var descent: CGFloat = 0
             let width = CGFloat(CTLineGetTypographicBounds(line, &ascent, &descent, nil))
-
             return ["width": Double(width), "height": Double(ascent + descent)]
         }
         nc.setObject(measureBlock, forKeyedSubscript: "measureText" as NSString)
 
-        // wrapText(text, maxWidth, fontFamily, size) → string[]
-        let wrapBlock: @convention(block) (String, Double, String, Double) -> [String] = { text, maxWidth, fontFamily, size in
-            let fontString = "\(Int(size))px \(fontFamily)"
+        // wrapText(text, maxWidth, font) → string[]
+        // font is a full CSS font string, e.g. 'bold 14px "Georgia"'
+        let wrapBlock: @convention(block) (String, Double, String) -> [String] = { text, maxWidth, fontString in
             let ctFont = CanvasFontParser.parse(fontString)
             let words = text.split(separator: " ").map(String.init)
             var lines: [String] = []
             var currentLine = ""
-
             for word in words {
                 let testLine = currentLine.isEmpty ? word : "\(currentLine) \(word)"
                 let attrs: [NSAttributedString.Key: Any] = [.font: ctFont]
                 let attrString = NSAttributedString(string: testLine, attributes: attrs)
-                let line = CTLineCreateWithAttributedString(attrString)
-                let width = CTLineGetTypographicBounds(line, nil, nil, nil)
-
+                let testCTLine = CTLineCreateWithAttributedString(attrString)
+                let width = CTLineGetTypographicBounds(testCTLine, nil, nil, nil)
                 if width > maxWidth, !currentLine.isEmpty {
                     lines.append(currentLine)
                     currentLine = word
@@ -288,21 +284,21 @@ public nonisolated enum CanvasStandardLibrary {
         }
         nc.setObject(wrapBlock, forKeyedSubscript: "wrapText" as NSString)
 
-        // fitText(text, maxWidth, fontFamily) → number (largest font size that fits)
-        let fitBlock: @convention(block) (String, Double, String) -> Double = { text, maxWidth, fontFamily in
+        // fitText(text, maxWidth, fontFamily, style?) → number (largest font size that fits)
+        // style is an optional CSS weight/style prefix, e.g. "bold" or "italic bold"
+        let fitBlock: @convention(block) (String, Double, String, String) -> Double = { text, maxWidth, fontFamily, style in
+            let prefix = (style.isEmpty || style == "undefined") ? "" : "\(style) "
             var low = 1.0
             var high = 500.0
             var result = low
-
             while high - low > 0.5 {
                 let mid = (low + high) / 2
-                let fontString = "\(Int(mid))px \(fontFamily)"
+                let fontString = "\(prefix)\(Int(mid))px \(fontFamily)"
                 let ctFont = CanvasFontParser.parse(fontString)
                 let attrs: [NSAttributedString.Key: Any] = [.font: ctFont]
                 let attrString = NSAttributedString(string: text, attributes: attrs)
                 let line = CTLineCreateWithAttributedString(attrString)
                 let width = CTLineGetTypographicBounds(line, nil, nil, nil)
-
                 if width <= maxWidth {
                     result = mid
                     low = mid
@@ -313,5 +309,10 @@ public nonisolated enum CanvasStandardLibrary {
             return result
         }
         nc.setObject(fitBlock, forKeyedSubscript: "fitText" as NSString)
+
+        // Wrap fitText so the style argument defaults to "" when omitted
+        jsContext.evaluateScript(
+            "(function(){ var r=nc.fitText; nc.fitText=function(t,w,f,s){ return r(t,w,f,s||''); }; })()",
+        )
     }
 }

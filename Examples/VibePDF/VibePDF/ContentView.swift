@@ -15,54 +15,29 @@ struct ContentView: View {
 
     var body: some View {
         NavigationStack {
-            VStack {
-                ZStack(alignment: .center) {
-#if canImport(AppKit)
-					HSplitView {
-						DocumentCanvasView()
-						SourceEditorView()
-					}
-#else
+            mainContent
+                .navigationTitle("VibePDF")
+                .toolbar {
+                    ToolbarItem(placement: .automatic) {
+                        Button {
+                            exportPDF()
+                        } label: {
+                            Image(systemName: "arrow.up.doc")
+                        }
+                        .disabled(!coordinator.hasScript)
+                    }
 
-					TabView {
-						Tab("View", systemImage: "doc.richtext") {
-							DocumentCanvasView()
-						}
-						Tab("Code", systemImage: "curlybraces") {
-							SourceEditorView()
-						}
-					}
-#endif
-                    if coordinator.showHistory {
-                        ChatHistoryView()
-                    } else {
-                        FloatingToastView()
+                    ToolbarItem(placement: .automatic) {
+                        Button {
+                            coordinator.showSidebar.toggle()
+                        } label: {
+                            Image(systemName: "sidebar.right")
+                        }
                     }
                 }
-                ChatInputBar(inputText: $inputText)
-            }
-            .navigationTitle("VibePDF")
-            .toolbar {
-                ToolbarItem(placement: .automatic) {
-                    Button {
-                        exportPDF()
-                    } label: {
-                        Image(systemName: "arrow.up.doc")
-                    }
-                    .disabled(!coordinator.hasScript)
+                .inspector(isPresented: Bindable(coordinator).showSidebar) {
+                    SettingsSidebarView()
                 }
-
-                ToolbarItem(placement: .automatic) {
-                    Button {
-                        coordinator.showSidebar.toggle()
-                    } label: {
-                        Image(systemName: "sidebar.right")
-                    }
-                }
-            }
-            .inspector(isPresented: Bindable(coordinator).showSidebar) {
-                SettingsSidebarView()
-            }
         }
         .fileExporter(
             isPresented: $showExporter,
@@ -70,6 +45,29 @@ struct ContentView: View {
             contentType: .pdf,
             defaultFilename: "document.pdf",
         ) { _ in }
+    }
+
+    @ViewBuilder
+    private var mainContent: some View {
+        #if canImport(AppKit)
+            MainSplitView()
+        #else
+            ZStack {
+                TabView {
+                    Tab("View", systemImage: "doc.richtext") {
+                        DocumentCanvasView()
+                    }
+                    Tab("Code", systemImage: "curlybraces") {
+                        SourceEditorView()
+                    }
+                }
+                if coordinator.showHistory {
+                    ChatHistoryView()
+                } else {
+                    FloatingToastView()
+                }
+            }
+        #endif
     }
 
     private func exportPDF() {

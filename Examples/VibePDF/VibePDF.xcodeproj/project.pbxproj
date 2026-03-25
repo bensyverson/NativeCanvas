@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		B56300522F740B6A00287CBE /* KeyManager in Frameworks */ = {isa = PBXBuildFile; productRef = CAFEBEEF00000001CAFEBEE1 /* KeyManager */; };
 		B563FF7E2F73367D00287CBE /* Operator in Frameworks */ = {isa = PBXBuildFile; productRef = B563FF7D2F73367D00287CBE /* Operator */; };
 		B563FF812F73369600287CBE /* NativeCanvas in Frameworks */ = {isa = PBXBuildFile; productRef = B563FF802F73369600287CBE /* NativeCanvas */; };
 /* End PBXBuildFile section */
@@ -57,6 +58,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				B56300522F740B6A00287CBE /* KeyManager in Frameworks */,
 				B563FF7E2F73367D00287CBE /* Operator in Frameworks */,
 				B563FF812F73369600287CBE /* NativeCanvas in Frameworks */,
 			);
@@ -88,6 +90,7 @@
 				B563FF532F73355200287CBE /* Products */,
 			);
 			sourceTree = "<group>";
+			usesTabs = 0;
 		};
 		B563FF532F73355200287CBE /* Products */ = {
 			isa = PBXGroup;
@@ -121,6 +124,7 @@
 			packageProductDependencies = (
 				B563FF7D2F73367D00287CBE /* Operator */,
 				B563FF802F73369600287CBE /* NativeCanvas */,
+				CAFEBEEF00000001CAFEBEE1 /* KeyManager */,
 			);
 			productName = VibePDF;
 			productReference = B563FF522F73355200287CBE /* VibePDF.app */;
@@ -207,6 +211,7 @@
 			packageReferences = (
 				B563FF7C2F73367C00287CBE /* XCRemoteSwiftPackageReference "Operator" */,
 				B563FF7F2F73369600287CBE /* XCLocalSwiftPackageReference "../../../NativeCanvas" */,
+				CAFEBEEF00000001CAFEBEE0 /* XCRemoteSwiftPackageReference "KeyManager" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = B563FF532F73355200287CBE /* Products */;
@@ -665,6 +670,14 @@
 				kind = branch;
 			};
 		};
+		CAFEBEEF00000001CAFEBEE0 /* XCRemoteSwiftPackageReference "KeyManager" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/bensyverson/KeyManager";
+			requirement = {
+				branch = main;
+				kind = branch;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -676,6 +689,11 @@
 		B563FF802F73369600287CBE /* NativeCanvas */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = NativeCanvas;
+		};
+		CAFEBEEF00000001CAFEBEE1 /* KeyManager */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = CAFEBEEF00000001CAFEBEE0 /* XCRemoteSwiftPackageReference "KeyManager" */;
+			productName = KeyManager;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

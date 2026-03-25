@@ -3,6 +3,7 @@
 //  VibePDF
 //
 
+import Operator
 import SwiftUI
 
 struct SettingsSidebarView: View {
@@ -35,6 +36,15 @@ struct SettingsSidebarView: View {
                         .autocorrectionDisabled()
                 }
 
+                if settings.provider.supportsTierSelection {
+                    Picker("Quality", selection: Bindable(settings).modelType) {
+                        Text("High").tag(Operator.ModelType.flagship)
+                        Text("Medium").tag(Operator.ModelType.standard)
+                        Text("Low").tag(Operator.ModelType.fast)
+                    }
+                    .pickerStyle(.segmented)
+                }
+
                 if settings.provider.requiresModelName {
                     TextField("Model Name", text: Bindable(settings).modelName)
                         .autocorrectionDisabled()
@@ -45,6 +55,7 @@ struct SettingsSidebarView: View {
         .onChange(of: settings.provider) { coordinator.buildOperative() }
         .onChange(of: settings.apiKey) { coordinator.buildOperative() }
         .onChange(of: settings.modelName) { coordinator.buildOperative() }
+        .onChange(of: settings.modelType) { coordinator.buildOperative() }
     }
 }
 

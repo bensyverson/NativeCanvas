@@ -8,26 +8,38 @@ import SwiftUI
 struct ChatHistoryView: View {
     @Environment(DocumentCoordinator.self) private var coordinator
 
+    private var showThinking: Bool {
+        guard coordinator.isAgentRunning else { return false }
+        guard let last = coordinator.messages.last else { return true }
+        return !(last.role == .agent && last.isStreaming)
+    }
+
+    private var thinkingLabel: String {
+        coordinator.messages.last?.role == .toolCall ? "Working…" : "Thinking…"
+    }
+
     var body: some View {
-        ScrollViewReader { proxy in
-            ScrollView {
-                LazyVStack(spacing: 8) {
-                    ForEach(coordinator.messages) { message in
-                        ChatBubble(message: message)
-                    }
+        ScrollView {
+            LazyVStack(spacing: 8) {
+                ForEach(coordinator.messages) { message in
+                    ChatBubble(message: message)
                 }
-                .padding(.horizontal, 16)
-                .padding(.bottom, 80)
-            }
-            .background(.clear)
-            .onChange(of: coordinator.messages) { _, messages in
-                if let last = messages.last {
-                    withAnimation(.easeOut(duration: 0.2)) {
-                        proxy.scrollTo(last.id, anchor: .bottom)
+                if showThinking {
+                    HStack {
+                        ThinkingBubble(label: thinkingLabel)
+                        Spacer(minLength: 48)
                     }
+                    .padding(.horizontal, 16)
+                    .transition(.opacity.combined(with: .move(edge: .bottom)))
                 }
             }
-        }.transition(.move(edge: .bottom).combined(with: .opacity))
+            .padding(.horizontal, 16)
+            .padding(.bottom, 8)
+        }
+        .background(.clear)
+        .defaultScrollAnchor(.bottom)
+        .animation(.easeInOut(duration: 0.2), value: showThinking)
+        .transition(.move(edge: .bottom).combined(with: .opacity))
     }
 }
 

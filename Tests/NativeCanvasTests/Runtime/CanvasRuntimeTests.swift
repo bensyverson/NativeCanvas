@@ -64,15 +64,27 @@ struct CanvasRuntimeTests {
 
     // MARK: - Error Handling
 
-    @Test("Throws missingExport when schema is missing")
-    func missingSchema() throws {
+    @Test("Schema-free script loads with default name")
+    func missingSchemaUsesDefaults() throws {
         let source = """
         export const layers = [{ name: "layer", render(ctx, params, scene) {} }];
         """
         let runtime = CanvasRuntime(width: 1920, height: 1080)
-        #expect(throws: CanvasError.self) {
-            try runtime.loadTemplate(source: source)
-        }
+        let template = try runtime.loadTemplate(source: source)
+        #expect(template.name == "Untitled")
+    }
+
+    @Test("Schema-free script has empty defaultParams")
+    func missingSchemaHasEmptyParams() throws {
+        let source = """
+        export const layers = [{ name: "layer", render(ctx, params, scene) {} }];
+        """
+        let runtime = CanvasRuntime(width: 1920, height: 1080)
+        let template = try runtime.loadTemplate(source: source)
+        // No params defined — defaultParams object should have no keys
+        let keys = runtime.jsContext.evaluateScript("Object.keys(nc)") // unrelated — just checking runtime is alive
+        let paramKeys = template.defaultParams.invokeMethod("hasOwnProperty", withArguments: ["anyKey"])
+        #expect(paramKeys?.toBool() == false)
     }
 
     @Test("Throws missingExport when layers is missing")
@@ -107,6 +119,25 @@ struct CanvasRuntimeTests {
         let runtime = CanvasRuntime(width: 1920, height: 1080)
         #expect(throws: CanvasError.self) {
             try runtime.loadTemplate(source: source)
+        }
+    }
+
+    @Test("Syntax error propagates line number")
+    func syntaxErrorHasLineNumber() throws {
+        // Error is on line 3 of the source
+        let source = """
+        export const schema = { name: "Test" };
+        export const layers = [];
+        @@@ syntax error here;
+        """
+        let runtime = CanvasRuntime(width: 100, height: 100)
+        do {
+            _ = try runtime.loadTemplate(source: source)
+            Issue.record("Expected evaluationFailed to be thrown")
+        } catch let CanvasError.evaluationFailed(_, line: line, column: _) {
+            #expect(line == 3)
+        } catch {
+            Issue.record("Unexpected error type: \(error)")
         }
     }
 

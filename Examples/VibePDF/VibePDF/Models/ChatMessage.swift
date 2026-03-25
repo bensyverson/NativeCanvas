@@ -7,7 +7,7 @@ import Foundation
 import NativeCanvas
 
 enum ChatRole: String, Friendly {
-    case user, agent, toolCall, system
+    case user, agent, toolCall, system, error
 }
 
 struct ChatMessage: Identifiable, Friendly {

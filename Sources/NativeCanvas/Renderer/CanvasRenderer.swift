@@ -159,7 +159,7 @@ public nonisolated enum CanvasRenderer {
         let canvas = CanvasBridge(width: width, height: height, profile: profile)
         try renderLayersInto(canvas: canvas, template: template, runtime: runtime, sceneValue: sceneValue, params: params)
         guard let image = canvas.makeImage() else {
-            throw CanvasError.evaluationFailed("Failed to produce CGImage from canvas")
+            throw CanvasError.evaluationFailed("Failed to produce CGImage from canvas", line: nil, column: nil)
         }
         return image
     }
