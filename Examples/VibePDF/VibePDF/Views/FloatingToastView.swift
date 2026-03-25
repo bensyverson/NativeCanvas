@@ -22,7 +22,7 @@ struct FloatingToastView: View {
         VStack {
             Spacer()
             if let text = visibleText {
-                Text(text)
+                Text(Self.attributed(text))
                     .multilineTextAlignment(.leading)
                     .padding(.horizontal, 16)
                     .padding(.vertical, 12)
@@ -65,11 +65,17 @@ struct FloatingToastView: View {
                 cancelAndClear()
                 return
             }
-            guard let agentMsg = messages.last(where: { $0.role == .agent }),
-                  agentMsg.isStreaming else { return }
-            dismissTask?.cancel()
-            dismissTask = nil
-            visibleText = agentMsg.text.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard let agentMsg = messages.last(where: { $0.role == .agent }) else { return }
+            if agentMsg.isStreaming {
+                dismissTask?.cancel()
+                dismissTask = nil
+                visibleText = agentMsg.text.trimmingCharacters(in: .whitespacesAndNewlines)
+            } else if visibleText != nil {
+                // Agent finished streaming text but is still running (about to
+                // think or call a tool). Linger briefly so the user can read,
+                // then clear so the ThinkingBubble can appear.
+                scheduleLinger()
+            }
         }
     }
 
@@ -79,12 +85,31 @@ struct FloatingToastView: View {
         withAnimation { visibleText = nil }
     }
 
+    /// Keeps the current toast visible briefly, then clears it so the
+    /// ThinkingBubble can appear while the agent is still running.
+    private func scheduleLinger() {
+        guard dismissTask == nil else { return }
+        dismissTask = Task {
+            try? await Task.sleep(for: .seconds(1.5))
+            guard !Task.isCancelled else { return }
+            withAnimation { visibleText = nil }
+            dismissTask = nil
+        }
+    }
+
     private func scheduleDismiss() {
         dismissTask = Task {
             try? await Task.sleep(for: .seconds(8))
             guard !Task.isCancelled else { return }
             withAnimation { visibleText = nil }
         }
+    }
+
+    private static func attributed(_ text: String) -> AttributedString {
+        let options = AttributedString.MarkdownParsingOptions(
+            interpretedSyntax: .inlineOnlyPreservingWhitespace,
+        )
+        return (try? AttributedString(markdown: text, options: options)) ?? AttributedString(text)
     }
 }
 

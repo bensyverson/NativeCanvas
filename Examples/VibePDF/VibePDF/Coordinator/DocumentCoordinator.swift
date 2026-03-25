@@ -36,6 +36,10 @@ import Operator
     var isScanningScript: Bool = false
     var agentCursorCanvasPoint: CGPoint?
 
+    /// True while a `write_script` tool call's arguments are being streamed in.
+    /// Render errors are suppressed during this phase because the JS is incomplete.
+    var isStreamingScript: Bool = false
+
     // MARK: - Settings
 
     var settings: AgentSettings = .init()
@@ -213,6 +217,14 @@ import Operator
             return
         }
         var currentAgentMessageID: UUID? = nil
+
+        // Accumulates streaming tool call arguments per tool-call index.
+        var toolCallNames: [Int: String] = [:]
+        var toolCallArgs: [Int: String] = [:]
+        // Throttle script streaming updates to avoid overwhelming SwiftUI.
+        var lastStreamUpdate: ContinuousClock.Instant = .now
+        let streamInterval: Duration = .milliseconds(100)
+
         defer {
             // Always finalize any in-flight streaming message so the UI cleans up.
             if let agentID = currentAgentMessageID,
@@ -220,6 +232,7 @@ import Operator
             {
                 messages[idx].isStreaming = false
             }
+            isStreamingScript = false
             // If cancelled (by stop() or a new send()), the caller already
             // owns isAgentRunning/sendTask — don't overwrite their state.
             if !Task.isCancelled {
@@ -248,7 +261,46 @@ import Operator
                         currentAgentMessageID = msg.id
                     }
 
+                case let .toolCallDelta(delta):
+                    // Track tool name from the first delta; accumulate argument fragments.
+                    if let name = delta.name {
+                        toolCallNames[delta.index] = name
+                    }
+                    toolCallArgs[delta.index, default: ""] += delta.argumentsFragment
+
+                    // Stream the script into the editor, throttled to ~10 fps.
+                    if toolCallNames[delta.index] == "write_script" {
+                        if !isStreamingScript {
+                            isStreamingScript = true
+                            lastStreamUpdate = .now
+                            // Finalize any in-flight agent text message.
+                            if let agentID = currentAgentMessageID,
+                               let idx = messages.firstIndex(where: { $0.id == agentID })
+                            {
+                                messages[idx].isStreaming = false
+                            }
+                            currentAgentMessageID = nil
+                            messages.append(ChatMessage(id: UUID(), role: .toolCall, text: "write_script", toolName: "write_script"))
+                        }
+                        let now: ContinuousClock.Instant = .now
+                        if now - lastStreamUpdate >= streamInterval,
+                           let partial = Self.extractPartialScript(from: toolCallArgs[delta.index, default: ""])
+                        {
+                            lastStreamUpdate = now
+                            streamScript(partial)
+                        }
+                    }
+
                 case let .toolsRequested(requests):
+                    // Script streaming is done — the full tool call has arrived.
+                    if isStreamingScript {
+                        isStreamingScript = false
+                        // Re-render with the final script to clear any suppressed errors.
+                        rerender()
+                    }
+                    toolCallNames.removeAll()
+                    toolCallArgs.removeAll()
+
                     if let agentID = currentAgentMessageID,
                        let idx = messages.firstIndex(where: { $0.id == agentID })
                     {
@@ -256,6 +308,10 @@ import Operator
                     }
                     currentAgentMessageID = nil
                     for req in requests {
+                        // Don't duplicate the toolCall message if we already added it during streaming.
+                        if req.name == "write_script", messages.last?.toolName == "write_script" {
+                            continue
+                        }
                         messages.append(ChatMessage(id: UUID(), role: .toolCall, text: req.name, toolName: req.name))
                     }
 
@@ -289,6 +345,69 @@ import Operator
         } catch {
             appendError(error.localizedDescription)
         }
+    }
+
+    /// Extracts the partial value of the `"script"` key from a streaming JSON
+    /// arguments string. The tool's arguments look like `{"script": "..."}`.
+    /// We find the opening quote after the key and JSON-decode the partial
+    /// string value (handling `\n`, `\"`, `\\`, etc.).
+    private static func extractPartialScript(from json: String) -> String? {
+        // Find the start of the script value after `"script":`
+        let pattern = #/"script"\s*:\s*"/#
+        guard let match = json.firstMatch(of: pattern) else { return nil }
+        let valueStart = match.range.upperBound
+
+        // Everything from the opening quote to the end is the partial JSON string value.
+        // It may be unterminated (no closing quote yet), so we can't use JSONDecoder.
+        // Instead, manually unescape JSON string escapes.
+        let raw = String(json[valueStart...])
+        return unescapeJSONString(raw)
+    }
+
+    /// Unescapes a partial JSON string body (without surrounding quotes).
+    /// Handles `\\`, `\"`, `\/`, `\n`, `\r`, `\t`, `\uXXXX`.
+    private static func unescapeJSONString(_ raw: String) -> String {
+        var result = ""
+        result.reserveCapacity(raw.count)
+        var iter = raw.makeIterator()
+
+        while let ch = iter.next() {
+            if ch == "\\" {
+                guard let esc = iter.next() else {
+                    // Trailing backslash — escape sequence is still being streamed.
+                    break
+                }
+                switch esc {
+                case "n": result.append("\n")
+                case "r": result.append("\r")
+                case "t": result.append("\t")
+                case "\"": result.append("\"")
+                case "\\": result.append("\\")
+                case "/": result.append("/")
+                case "u":
+                    // \uXXXX — read 4 hex digits
+                    var hex = ""
+                    for _ in 0 ..< 4 {
+                        guard let h = iter.next() else { return result }
+                        hex.append(h)
+                    }
+                    if let code = UInt32(hex, radix: 16), let scalar = Unicode.Scalar(code) {
+                        result.append(Character(scalar))
+                    }
+                default:
+                    // Unknown escape — append as-is
+                    result.append("\\")
+                    result.append(esc)
+                }
+            } else if ch == "\"" {
+                // Closing quote of the JSON string value — stop here.
+                break
+            } else {
+                result.append(ch)
+            }
+        }
+
+        return result
     }
 
     private func appendError(_ text: String) {
@@ -407,6 +526,14 @@ import Operator
         }
     }
 
+    /// Sets the script from a streaming tool call delta without highlighting
+    /// or clearing previous render state. Render errors are suppressed because
+    /// the JS is still incomplete.
+    func streamScript(_ partialScript: String) {
+        jsScript = partialScript
+        rerender()
+    }
+
     func rerender() {
         guard let source = jsScript else {
             renderedImage = nil
@@ -419,9 +546,13 @@ import Operator
             renderError = nil
             renderErrorLine = nil
         } catch let CanvasError.evaluationFailed(message, line: line, column: _) {
+            // Suppress errors while the script is still being streamed in —
+            // the JS is incomplete and will fail to parse until finished.
+            guard !isStreamingScript else { return }
             renderError = message
             renderErrorLine = line
         } catch {
+            guard !isStreamingScript else { return }
             renderError = error.localizedDescription
             renderErrorLine = nil
         }
