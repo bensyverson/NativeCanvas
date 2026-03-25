@@ -29,6 +29,8 @@ public nonisolated enum CanvasRenderer {
     ///   - scene: An `Encodable & Sendable` value merged into the JS scene object.
     ///   - viewport: Canvas dimensions and safe area.
     ///   - profile: Rendering profile controlling pixel format. Default `.display`.
+    ///   - scale: Backing scale factor. The returned image will be `width * scale` ×
+    ///     `height * scale` pixels while drawing coordinates remain in points. Default 1.
     ///   - standardLibrary: Whether to inject the `nc` standard library. Default `true`.
     /// - Returns: The rendered `CGImage`.
     /// - Throws: ``CanvasError`` on JS evaluation or missing exports; `EncodingError` if scene encoding fails.
@@ -39,6 +41,7 @@ public nonisolated enum CanvasRenderer {
         scene: some Encodable & Sendable,
         viewport: CanvasViewport,
         profile: CanvasBridge.RenderingProfile = .display,
+        scale: Int = 1,
         standardLibrary: Bool = true,
     ) throws -> CGImage {
         let runtime = CanvasRuntime(width: viewport.width, height: viewport.height, standardLibrary: standardLibrary)
@@ -51,6 +54,7 @@ public nonisolated enum CanvasRenderer {
             template: template, runtime: runtime,
             sceneValue: sceneValue, params: nil, profile: profile,
             width: viewport.width, height: viewport.height,
+            scale: scale,
         )
     }
 
@@ -63,12 +67,14 @@ public nonisolated enum CanvasRenderer {
         frame: Int = 0,
         viewport: CanvasViewport,
         profile: CanvasBridge.RenderingProfile = .display,
+        scale: Int = 1,
         standardLibrary: Bool = true,
     ) throws -> CGImage {
         try render(
             source: source, at: time, frame: frame,
             scene: NoScene(), viewport: viewport,
-            profile: profile, standardLibrary: standardLibrary,
+            profile: profile, scale: scale,
+            standardLibrary: standardLibrary,
         )
     }
 
@@ -155,8 +161,9 @@ public nonisolated enum CanvasRenderer {
         profile: CanvasBridge.RenderingProfile,
         width: Int,
         height: Int,
+        scale: Int = 1,
     ) throws -> CGImage {
-        let canvas = CanvasBridge(width: width, height: height, profile: profile)
+        let canvas = CanvasBridge(width: width, height: height, scale: scale, profile: profile)
         try renderLayersInto(canvas: canvas, template: template, runtime: runtime, sceneValue: sceneValue, params: params)
         guard let image = canvas.makeImage() else {
             throw CanvasError.evaluationFailed("Failed to produce CGImage from canvas", line: nil, column: nil)

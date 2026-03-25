@@ -124,10 +124,10 @@ import Operator
         ```
 
         Workflow:
-        0. Use read_script before making changes
-        1. Use write_script to create or fully replace a script.
-        2. Use edit_script for targeted changes (find old string, replace with new).
-        3. Always use view_canvas (if available) to visually verify your changes.
+        1. Use read_script before making changes
+        2. Use write_script to create or fully replace a script.
+        3. Use edit_script for targeted changes (find old string, replace with new).
+        4. Always use view_canvas (if available) to visually verify your changes.
 
         Style notes:
         - 1.2x font size is a good starting point for line spacing
@@ -135,9 +135,13 @@ import Operator
 
         Important notes:
         - Keep scripts clean and well-structured. Use meaningful layer names.
+        - Be careful to escape any quotes (") in non-templated string literals.
         - Pay CLOSE attention to typography. ALWAYS make sure your text doesn't overlap, and isn't cut off, unless that is the desired effect. Look carefully!
-        - Keep your messages to the user friendly and concise; try to stay under 20 words. Don't just recap what you did. Do not use Markdown lists or tables.
+        - Do not use Markdown lists or tables in your messages!
+        - Keep your messages to the user friendly and SHORT; try to stay under 20 words. Don't just recap what you did.
         - DO NOT create the canvas or context objects. Our own ctx will be combined with your `layers` array to render the document.
+        - Feel free to create your document iteratively; you can create a layer or two, render the result, then edit or add layers until you're satisfied.
+        - Before deciding that you're done, use view_canvas to look at your work. Is there anything you could improve? If so, give it one more pass.
 
         Document size: \(settings.pixelWidth) x \(settings.pixelHeight) pt
         """
@@ -188,6 +192,10 @@ import Operator
 
     func send(_ text: String) {
         sendTask?.cancel()
+        // Set state synchronously so SwiftUI shows the user message and
+        // thinking indicator immediately, before any async work begins.
+        isAgentRunning = true
+        messages.append(ChatMessage(id: UUID(), role: .user, text: text))
         sendTask = Task { await _send(text) }
     }
 
@@ -198,8 +206,12 @@ import Operator
     }
 
     private func _send(_ text: String) async {
-        guard let operative else { return }
-        isAgentRunning = true
+        guard let operative else {
+            appendError("Agent not configured. Check your provider settings.")
+            isAgentRunning = false
+            sendTask = nil
+            return
+        }
         var currentAgentMessageID: UUID? = nil
         defer {
             // Always finalize any in-flight streaming message so the UI cleans up.
@@ -215,8 +227,6 @@ import Operator
                 sendTask = nil
             }
         }
-
-        messages.append(ChatMessage(id: UUID(), role: .user, text: text))
 
         let stream: OperationStream = if let convo = lastConversation {
             operative.run(text, continuing: convo)
@@ -264,12 +274,13 @@ import Operator
                         messages[idx].isStreaming = false
                     }
 
-                case .stopped:
+                case let .stopped(reason):
                     if let agentID = currentAgentMessageID,
                        let idx = messages.firstIndex(where: { $0.id == agentID })
                     {
                         messages[idx].isStreaming = false
                     }
+                    appendError(stopReasonMessage(reason))
 
                 default:
                     break
@@ -282,6 +293,19 @@ import Operator
 
     private func appendError(_ text: String) {
         messages.append(ChatMessage(id: UUID(), role: .error, text: text))
+    }
+
+    private func stopReasonMessage(_ reason: StopReason) -> String {
+        switch reason {
+        case .turnLimitReached:
+            "Agent stopped: turn limit reached."
+        case .tokenBudgetExhausted:
+            "Agent stopped: token budget exhausted."
+        case .timeout:
+            "Agent stopped: timed out."
+        case let .explicitStop(reason):
+            reason
+        }
     }
 
     // MARK: - Script Management
@@ -391,7 +415,7 @@ import Operator
             return
         }
         do {
-            renderedImage = try CanvasRenderer.render(source: source, viewport: settings.viewport)
+            renderedImage = try CanvasRenderer.render(source: source, viewport: settings.viewport, scale: 2)
             renderError = nil
             renderErrorLine = nil
         } catch let CanvasError.evaluationFailed(message, line: line, column: _) {

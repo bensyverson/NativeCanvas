@@ -39,11 +39,26 @@ import Testing
             #expect(traits.contains(.italicTrait))
         }
 
-        @Test("Parses italic bold combined")
+        @Test("Parses italic bold combined (spec order)")
         func italicBold() {
             let font = CanvasFontParser.parse("italic bold 16px Helvetica")
             let size = CTFontGetSize(font)
             #expect(size == 16.0)
+            let traits = CTFontGetSymbolicTraits(font)
+            #expect(traits.contains(.boldTrait))
+            #expect(traits.contains(.italicTrait))
+        }
+
+        @Test("Parses bold italic combined (reversed order)")
+        func boldItalic() {
+            let font = CanvasFontParser.parse("bold italic 60px Georgia")
+            let size = CTFontGetSize(font)
+            #expect(size == 60.0)
+            let traits = CTFontGetSymbolicTraits(font)
+            #expect(traits.contains(.boldTrait))
+            #expect(traits.contains(.italicTrait))
+            let family = CTFontCopyFamilyName(font) as String
+            #expect(family == "Georgia")
         }
 
         @Test("Parses numeric weight")
@@ -118,6 +133,27 @@ import Testing
             #expect(family == "Georgia")
             let traits = CTFontGetSymbolicTraits(font)
             #expect(traits.contains(.italicTrait))
+        }
+
+        @Test("Strips double quotes from font family name")
+        func doubleQuotedFamily() {
+            let font = CanvasFontParser.parse("bold 32px \"Georgia\"")
+            let family = CTFontCopyFamilyName(font) as String
+            #expect(family == "Georgia")
+        }
+
+        @Test("Strips single quotes from font family name")
+        func singleQuotedFamily() {
+            let font = CanvasFontParser.parse("16px 'Helvetica Neue'")
+            let family = CTFontCopyFamilyName(font) as String
+            #expect(family == "Helvetica Neue")
+        }
+
+        @Test("Strips quotes from font family in comma fallback list")
+        func quotedFamilyWithFallback() {
+            let font = CanvasFontParser.parse("14px \"Times New Roman\", serif")
+            let family = CTFontCopyFamilyName(font) as String
+            #expect(family == "Times New Roman")
         }
     }
 #endif

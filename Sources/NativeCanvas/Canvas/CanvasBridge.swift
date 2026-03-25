@@ -45,11 +45,15 @@ public final nonisolated class CanvasBridge {
     /// The color space used for color parsing and context creation.
     public let colorSpace: CGColorSpace
 
-    /// The canvas width in pixels.
+    /// The canvas width in points.
     public let width: Int
 
-    /// The canvas height in pixels.
+    /// The canvas height in points.
     public let height: Int
+
+    /// The backing scale factor. A value of 2 produces a 2x-resolution bitmap
+    /// while keeping all drawing coordinates in points.
+    public let scale: Int
 
     private let baseTransform: CGAffineTransform
     private var stateStack: [CanvasState] = []
@@ -82,10 +86,22 @@ public final nonisolated class CanvasBridge {
     // MARK: - Initialization
 
     /// Creates a new canvas bridge with a CGContext configured for the given profile.
-    public init(width: Int, height: Int, profile: RenderingProfile = .display) {
+    ///
+    /// - Parameters:
+    ///   - width: Canvas width in points.
+    ///   - height: Canvas height in points.
+    ///   - scale: Backing scale factor. The bitmap is created at `width * scale` ×
+    ///     `height * scale` pixels, but all drawing coordinates remain in points.
+    ///     Default is 1 (1:1 mapping).
+    ///   - profile: Rendering profile controlling pixel format.
+    public init(width: Int, height: Int, scale: Int = 1, profile: RenderingProfile = .display) {
         self.width = width
         self.height = height
+        self.scale = scale
         self.profile = profile
+
+        let pixelWidth = width * scale
+        let pixelHeight = height * scale
 
         let resolvedColorSpace: CGColorSpace
         let bitsPerComponent: Int
@@ -96,12 +112,12 @@ public final nonisolated class CanvasBridge {
         case .display:
             resolvedColorSpace = CGColorSpaceCreateDeviceRGB()
             bitsPerComponent = 8
-            bytesPerRow = width * 4
+            bytesPerRow = pixelWidth * 4
             bitmapInfo = CGBitmapInfo(rawValue: CGImageAlphaInfo.premultipliedLast.rawValue)
         case .hdr:
             resolvedColorSpace = CGColorSpace(name: CGColorSpace.extendedLinearSRGB)!
             bitsPerComponent = 32
-            bytesPerRow = width * 16
+            bytesPerRow = pixelWidth * 16
             bitmapInfo = CGBitmapInfo(rawValue: CGBitmapInfo.floatComponents.rawValue | CGImageAlphaInfo.premultipliedLast.rawValue | CGBitmapInfo.byteOrder32Little.rawValue)
         }
 
@@ -109,21 +125,24 @@ public final nonisolated class CanvasBridge {
 
         guard let ctx = CGContext(
             data: nil,
-            width: width,
-            height: height,
+            width: pixelWidth,
+            height: pixelHeight,
             bitsPerComponent: bitsPerComponent,
             bytesPerRow: bytesPerRow,
             space: resolvedColorSpace,
             bitmapInfo: bitmapInfo.rawValue,
         ) else {
-            fatalError("Failed to create CGContext (\(width)×\(height), profile: \(profile))")
+            fatalError("Failed to create CGContext (\(pixelWidth)×\(pixelHeight), profile: \(profile))")
         }
 
         cgContext = ctx
         currentState = CanvasState(colorSpace: resolvedColorSpace)
 
-        cgContext.translateBy(x: 0, y: CGFloat(height))
+        cgContext.translateBy(x: 0, y: CGFloat(pixelHeight))
         cgContext.scaleBy(x: 1, y: -1)
+        if scale > 1 {
+            cgContext.scaleBy(x: CGFloat(scale), y: CGFloat(scale))
+        }
         baseTransform = cgContext.ctm
 
         applyState()
@@ -136,12 +155,13 @@ public final nonisolated class CanvasBridge {
     ///
     /// - Parameters:
     ///   - context: An existing CGContext to draw into
-    ///   - width: Canvas width in pixels
-    ///   - height: Canvas height in pixels
+    ///   - width: Canvas width in points
+    ///   - height: Canvas height in points
     ///   - profile: Rendering profile (used to select color space for state parsing)
     public init(context: CGContext, width: Int, height: Int, profile: RenderingProfile = .display) {
         self.width = width
         self.height = height
+        scale = 1
         self.profile = profile
         cgContext = context
 
@@ -505,7 +525,7 @@ public final nonisolated class CanvasBridge {
         cgContext.setShadow(offset: offset, blur: state.shadowBlur, color: state.shadowColor)
     }
 
-    private func drawGradient(_ gradient: CanvasGradient) {
+    func drawGradient(_ gradient: CanvasGradient) {
         guard let cgGradient = gradient.makeCGGradient(in: colorSpace) else { return }
         let options: CGGradientDrawingOptions = [.drawsBeforeStartLocation, .drawsAfterEndLocation]
 
@@ -534,10 +554,12 @@ public final nonisolated class CanvasBridge {
     /// This preserves the current clip (which is in device space) while correctly
     /// rendering alpha values that PDF shading functions cannot express.
     private func drawGradientOffscreen(_ gradient: CanvasGradient, cgGradient: CGGradient, options: CGGradientDrawingOptions) {
+        let pixelWidth = width * scale
+        let pixelHeight = height * scale
         let bitmapInfo = CGBitmapInfo(rawValue: CGImageAlphaInfo.premultipliedLast.rawValue)
         guard let offCtx = CGContext(
-            data: nil, width: width, height: height,
-            bitsPerComponent: 8, bytesPerRow: width * 4,
+            data: nil, width: pixelWidth, height: pixelHeight,
+            bitsPerComponent: 8, bytesPerRow: pixelWidth * 4,
             space: CGColorSpaceCreateDeviceRGB(), bitmapInfo: bitmapInfo.rawValue,
         ) else { return }
 
@@ -557,7 +579,7 @@ public final nonisolated class CanvasBridge {
         // in device space, so it still masks correctly after resetting the CTM.
         cgContext.saveGState()
         cgContext.concatenate(cgContext.ctm.inverted())
-        cgContext.draw(image, in: CGRect(x: 0, y: 0, width: width, height: height))
+        cgContext.draw(image, in: CGRect(x: 0, y: 0, width: pixelWidth, height: pixelHeight))
         cgContext.restoreGState()
     }
 

@@ -183,7 +183,7 @@ final class CanvasOperable: Operable {
         // synchronous render occupies the thread.
         try? await Task.sleep(for: .milliseconds(50))
         do {
-            let image = try CanvasRenderer.render(source: source, viewport: viewport)
+            let image = try CanvasRenderer.render(source: source, viewport: viewport, scale: 2)
             // Keep the animation visible for a minimum duration.
             try? await Task.sleep(for: .milliseconds(400))
             await coordinator.endScanningCanvas()

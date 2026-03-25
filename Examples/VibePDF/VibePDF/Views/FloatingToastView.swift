@@ -44,8 +44,8 @@ struct FloatingToastView: View {
         .onChange(of: coordinator.isAgentRunning) { _, running in
             if running {
                 cancelAndClear()
-            } else if let last = coordinator.messages.last(where: { $0.role == .agent }) {
-                // Agent finished — show final message then auto-dismiss.
+            } else if let last = coordinator.messages.last(where: { $0.role == .agent || $0.role == .error }) {
+                // Agent finished — show final message (or error) then auto-dismiss.
                 visibleText = last.text.trimmingCharacters(in: .whitespacesAndNewlines)
                 scheduleDismiss()
             }
@@ -53,6 +53,13 @@ struct FloatingToastView: View {
         // While running, keep the toast in sync with the streaming agent message.
         .onChange(of: coordinator.messages) { _, messages in
             guard coordinator.isAgentRunning else { return }
+            // A new user message means a fresh send — clear any stale toast
+            // so the ThinkingBubble can appear (handles rapid re-sends where
+            // isAgentRunning stays true and its onChange doesn't fire).
+            if let last = messages.last, last.role == .user {
+                cancelAndClear()
+                return
+            }
             // Tool calls clear the toast so the ThinkingBubble can show.
             if let last = messages.last, last.role == .toolCall {
                 cancelAndClear()

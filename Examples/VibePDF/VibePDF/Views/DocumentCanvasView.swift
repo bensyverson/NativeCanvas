@@ -18,7 +18,7 @@ struct DocumentCanvasView: View {
 
             ZStack(alignment: .topLeading) {
                 // Document card
-                RoundedRectangle(cornerRadius: 2)
+                RoundedRectangle(cornerRadius: 4)
                     .fill(Color.white)
                     .shadow(color: .black.opacity(0.3), radius: 12, y: 4)
                     .aspectRatio(aspectRatio, contentMode: .fit)
@@ -52,7 +52,7 @@ struct DocumentCanvasView: View {
                             .onDisappear { scanPhase = 0 }
                         }
                     }
-                    .clipShape(RoundedRectangle(cornerRadius: 2))
+                    .clipShape(RoundedRectangle(cornerRadius: 4))
                     .frame(width: docFrame.width, height: docFrame.height)
                     .position(x: docFrame.midX, y: docFrame.midY)
 

@@ -66,29 +66,30 @@ public nonisolated enum CanvasFontParser {
         var isItalic = false
         var weight: CGFloat = 0
 
-        if index < tokens.count, styleKeywords.contains(tokens[index]) {
-            if tokens[index] == "italic" || tokens[index] == "oblique" {
-                isItalic = true
-            }
-            index += 1
-        }
-
-        if index < tokens.count, variantKeywords.contains(tokens[index]) {
-            index += 1
-        }
-
-        if index < tokens.count {
+        // Consume style, variant, and weight tokens in any order.
+        // The CSS spec prescribes style → variant → weight, but LLMs
+        // commonly produce "bold italic" (weight before style).  We
+        // keep consuming until we hit a size token or an unrecognised word.
+        while index < tokens.count {
             let token = tokens[index]
-            if token == "bold" {
+
+            // Stop as soon as we find something that looks like a size.
+            if parseSize(token) != nil { break }
+
+            if token == "italic" || token == "oblique" {
+                isItalic = true
+            } else if token == "bold" {
                 weight = 0.4
-                index += 1
-            } else if token == "normal" {
-                weight = 0
-                index += 1
+            } else if token == "small-caps" || token == "normal" {
+                // "normal" can be style, variant, or weight — just skip it.
             } else if let numWeight = numericWeight(token) {
                 weight = numWeight
-                index += 1
+            } else {
+                // Unrecognised token before the size — bail out so the
+                // caller can fall back to the default font.
+                break
             }
+            index += 1
         }
 
         guard index < tokens.count else { return nil }
@@ -174,10 +175,13 @@ public nonisolated enum CanvasFontParser {
     private static func normalizeFamily(_ family: String) -> String {
         // CSS font-family allows comma-separated fallbacks (e.g. "Georgia, serif").
         // CoreText expects a single family name, so take only the first entry.
+        // Quotes around family names (e.g. "Georgia" or 'Helvetica Neue') are
+        // valid in CSS but must be stripped before passing to CoreText.
         let primary = family
             .split(separator: ",", maxSplits: 1)
             .first
             .map { $0.trimmingCharacters(in: .whitespaces) }
+            .map { $0.trimmingCharacters(in: CharacterSet(charactersIn: "\"'")) }
             ?? family
 
         switch primary.lowercased() {
