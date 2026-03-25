@@ -20,13 +20,14 @@ public struct CanvasParamDef: Friendly {
     /// Whether this parameter can be animated over time.
     public let animatable: Bool
 
+    /// Creates a parameter definition with the given type, default value, and constraints.
     public init(
         type: CanvasParamType,
         defaultValue: CanvasParamValue,
         min: Double?,
         max: Double?,
         options: [String]?,
-        animatable: Bool
+        animatable: Bool,
     ) {
         self.type = type
         self.defaultValue = defaultValue

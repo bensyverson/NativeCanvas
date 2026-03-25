@@ -10,20 +10,33 @@ import Foundation
 /// Uses tagged enum encoding for unambiguous serialization:
 /// each case encodes as `{"type": "<case>", "value": <payload>}`.
 public enum CanvasParamValue: Hashable, Equatable, Sendable {
+    /// A short single-line string value.
     case string(String)
+    /// A numeric (floating-point) value.
     case number(Double)
+    /// A boolean value.
     case bool(Bool)
+    /// A font value describing family, weight, and optional style.
     case font(FontValue)
+    /// A 2D point value with `x` and `y` components.
     case point2d(Point2DValue)
+    /// A gradient defined by an ordered array of color stops.
     case gradient([GradientStop])
+    /// An arbitrary key-value object.
     case object([String: CanvasParamValue])
+    /// A null / absent value.
     case null
 
+    /// A font descriptor used for ``CanvasParamValue/font(_:)`` values.
     public struct FontValue: Friendly {
+        /// The font family name (e.g. `"Helvetica Neue"`).
         public let family: String
+        /// The font weight (e.g. `"bold"`, `"400"`).
         public let weight: String
+        /// The font style (e.g. `"italic"`), if any.
         public let style: String?
 
+        /// Creates a font value with the given family, weight, and optional style.
         public init(family: String, weight: String, style: String?) {
             self.family = family
             self.weight = weight
@@ -31,20 +44,28 @@ public enum CanvasParamValue: Hashable, Equatable, Sendable {
         }
     }
 
+    /// A 2D coordinate used for ``CanvasParamValue/point2d(_:)`` values.
     public struct Point2DValue: Friendly {
+        /// The horizontal component.
         public let x: Double
+        /// The vertical component.
         public let y: Double
 
+        /// Creates a point with the given x and y components.
         public init(x: Double, y: Double) {
             self.x = x
             self.y = y
         }
     }
 
+    /// A single color stop in a gradient, used for ``CanvasParamValue/gradient(_:)`` values.
     public struct GradientStop: Friendly {
+        /// The position of the stop along the gradient axis (0.0 – 1.0).
         public let stop: Double
+        /// The CSS color string at this stop.
         public let color: String
 
+        /// Creates a gradient stop at the given position with the given CSS color.
         public init(stop: Double, color: String) {
             self.stop = stop
             self.color = color

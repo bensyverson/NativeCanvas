@@ -32,9 +32,12 @@ public struct CanvasSchema: Friendly {
 
     /// Author metadata for a template.
     public struct Author: Friendly {
+        /// The author's display name.
         public let name: String
+        /// An optional URL linking to the author's website or profile.
         public let url: String?
 
+        /// Creates an author descriptor with the given name and optional URL.
         public init(name: String, url: String?) {
             self.name = name
             self.url = url
@@ -43,15 +46,19 @@ public struct CanvasSchema: Friendly {
 
     /// A named parameter definition, preserving insertion order.
     public struct ParamEntry: Friendly {
+        /// The parameter key as declared in the template schema.
         public let key: String
+        /// The parameter definition.
         public let definition: CanvasParamDef
 
+        /// Creates a param entry with the given key and definition.
         public init(key: String, definition: CanvasParamDef) {
             self.key = key
             self.definition = definition
         }
     }
 
+    /// Creates a schema with the given metadata and parameter definitions.
     public init(
         name: String,
         description: String,
@@ -61,7 +68,7 @@ public struct CanvasSchema: Friendly {
         author: Author?,
         params: [ParamEntry],
         paramGroups: [String: [String]]?,
-        defaultDuration: Double?
+        defaultDuration: Double?,
     ) {
         self.name = name
         self.description = description
@@ -82,9 +89,9 @@ public struct CanvasSchema: Friendly {
 
 // MARK: - JSValue Extraction
 
-extension CanvasSchema {
+public extension CanvasSchema {
     /// Extracts a `CanvasSchema` from a JSValue representing the template's schema object.
-    public nonisolated static func from(_ schemaValue: JSValue) -> CanvasSchema? {
+    nonisolated static func from(_ schemaValue: JSValue) -> CanvasSchema? {
         guard !schemaValue.isUndefined, !schemaValue.isNull else { return nil }
 
         let name = schemaValue.forProperty("name").flatMap { $0.isUndefined ? nil : $0.toString() } ?? "Untitled"
@@ -180,7 +187,7 @@ extension CanvasSchema {
             author: author,
             params: paramEntries,
             paramGroups: paramGroups,
-            defaultDuration: defaultDuration
+            defaultDuration: defaultDuration,
         )
     }
 }

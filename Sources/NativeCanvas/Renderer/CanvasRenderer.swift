@@ -9,6 +9,7 @@ import JavaScriptCore
 
 /// An empty scene for use when no user data is needed.
 public struct NoScene: Encodable, Sendable {
+    /// Creates an empty scene.
     public init() {}
 }
 
@@ -17,7 +18,6 @@ public struct NoScene: Encodable, Sendable {
 /// All methods are static and `nonisolated`. Each render call creates a fresh
 /// `CanvasRuntime` and `CanvasBridge` so concurrent calls are safe.
 public nonisolated enum CanvasRenderer {
-
     // MARK: - CGImage Render (with scene)
 
     /// Renders a template to a `CGImage` with user-supplied scene data.
@@ -32,25 +32,25 @@ public nonisolated enum CanvasRenderer {
     ///   - standardLibrary: Whether to inject the `nc` standard library. Default `true`.
     /// - Returns: The rendered `CGImage`.
     /// - Throws: ``CanvasError`` on JS evaluation or missing exports; `EncodingError` if scene encoding fails.
-    public static func render<Scene: Encodable & Sendable>(
+    public static func render(
         source: String,
         at time: Double = 0,
         frame: Int = 0,
-        scene: Scene,
+        scene: some Encodable & Sendable,
         viewport: CanvasViewport,
         profile: CanvasBridge.RenderingProfile = .display,
-        standardLibrary: Bool = true
+        standardLibrary: Bool = true,
     ) throws -> CGImage {
         let runtime = CanvasRuntime(width: viewport.width, height: viewport.height, standardLibrary: standardLibrary)
         let template = try runtime.loadTemplate(source: source)
         let sceneValue = try buildSceneValue(
             scene: scene, time: time, frame: frame,
-            viewport: viewport, in: runtime.jsContext
+            viewport: viewport, in: runtime.jsContext,
         )
         return try renderLayers(
             template: template, runtime: runtime,
             sceneValue: sceneValue, params: nil, profile: profile,
-            width: viewport.width, height: viewport.height
+            width: viewport.width, height: viewport.height,
         )
     }
 
@@ -63,12 +63,12 @@ public nonisolated enum CanvasRenderer {
         frame: Int = 0,
         viewport: CanvasViewport,
         profile: CanvasBridge.RenderingProfile = .display,
-        standardLibrary: Bool = true
+        standardLibrary: Bool = true,
     ) throws -> CGImage {
         try render(
             source: source, at: time, frame: frame,
             scene: NoScene(), viewport: viewport,
-            profile: profile, standardLibrary: standardLibrary
+            profile: profile, standardLibrary: standardLibrary,
         )
     }
 
@@ -77,21 +77,21 @@ public nonisolated enum CanvasRenderer {
     /// Renders a template into an existing `CGContext`.
     ///
     /// The caller owns the context and is responsible for its lifecycle.
-    public static func render<Scene: Encodable & Sendable>(
+    public static func render(
         source: String,
         at time: Double = 0,
         frame: Int = 0,
-        scene: Scene,
+        scene: some Encodable & Sendable,
         into context: CGContext,
         viewport: CanvasViewport,
         profile: CanvasBridge.RenderingProfile = .display,
-        standardLibrary: Bool = true
+        standardLibrary: Bool = true,
     ) throws {
         let runtime = CanvasRuntime(width: viewport.width, height: viewport.height, standardLibrary: standardLibrary)
         let template = try runtime.loadTemplate(source: source)
         let sceneValue = try buildSceneValue(
             scene: scene, time: time, frame: frame,
-            viewport: viewport, in: runtime.jsContext
+            viewport: viewport, in: runtime.jsContext,
         )
         let canvas = CanvasBridge(context: context, width: viewport.width, height: viewport.height, profile: profile)
         try renderLayersInto(canvas: canvas, template: template, runtime: runtime, sceneValue: sceneValue, params: nil)
@@ -99,12 +99,12 @@ public nonisolated enum CanvasRenderer {
 
     // MARK: - Private Helpers
 
-    private static func buildSceneValue<Scene: Encodable>(
-        scene: Scene,
+    private static func buildSceneValue(
+        scene: some Encodable,
         time: Double,
         frame: Int,
         viewport: CanvasViewport,
-        in jsContext: JSContext
+        in jsContext: JSContext,
     ) throws -> JSValue {
         // Encode user scene to JSON, then parse in JSContext
         let encoder = JSONEncoder()
@@ -112,13 +112,12 @@ public nonisolated enum CanvasRenderer {
         let jsonString = String(data: jsonData, encoding: .utf8) ?? "{}"
 
         // Parse user JSON in JS context
-        let sceneValue: JSValue
-        if let parsed = jsContext.evaluateScript("JSON.parse(\(jsonStringLiteral(jsonString)))"),
-           !parsed.isUndefined, !parsed.isNull, parsed.isObject
+        let sceneValue: JSValue = if let parsed = jsContext.evaluateScript("JSON.parse(\(jsonStringLiteral(jsonString)))"),
+                                     !parsed.isUndefined, !parsed.isNull, parsed.isObject
         {
-            sceneValue = parsed
+            parsed
         } else {
-            sceneValue = JSValue(newObjectIn: jsContext)!
+            JSValue(newObjectIn: jsContext)!
         }
 
         // Merge base fields: t, frame, viewport
@@ -155,7 +154,7 @@ public nonisolated enum CanvasRenderer {
         params: [String: Any]?,
         profile: CanvasBridge.RenderingProfile,
         width: Int,
-        height: Int
+        height: Int,
     ) throws -> CGImage {
         let canvas = CanvasBridge(width: width, height: height, profile: profile)
         try renderLayersInto(canvas: canvas, template: template, runtime: runtime, sceneValue: sceneValue, params: params)
@@ -170,7 +169,7 @@ public nonisolated enum CanvasRenderer {
         template: CanvasTemplate,
         runtime: CanvasRuntime,
         sceneValue: JSValue,
-        params: [String: Any]?
+        params: [String: Any]?,
     ) throws {
         // Build params: start from defaults, overlay overrides
         let paramsValue = JSValue(newObjectIn: runtime.jsContext)!

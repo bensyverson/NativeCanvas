@@ -14,7 +14,9 @@ import CoreGraphics
 public final nonisolated class CanvasGradient {
     /// The type of gradient.
     public enum GradientType {
+        /// A gradient that transitions linearly between two points.
         case linear
+        /// A gradient that transitions radially between two circles.
         case radial
     }
 
@@ -84,7 +86,7 @@ public final nonisolated class CanvasGradient {
         return CGGradient(
             colorsSpace: colorSpace,
             colors: colors,
-            locations: &locations
+            locations: &locations,
         )
     }
 }

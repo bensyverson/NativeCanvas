@@ -42,12 +42,14 @@ public struct CanvasTemplate {
         /// The param key this layer's text is bound to, if any.
         public let editableParam: String?
 
+        /// Creates a layer info descriptor.
         public init(name: String, editableParam: String?) {
             self.name = name
             self.editableParam = editableParam
         }
     }
 
+    /// Creates a template descriptor with the given name, layer metadata, and JS objects.
     public init(name: String, layers: [LayerInfo], defaultParams: JSValue, layersValue: JSValue) {
         self.name = name
         self.layers = layers
@@ -210,7 +212,7 @@ public final nonisolated class CanvasRuntime {
             name: name,
             layers: layerInfos,
             defaultParams: defaultParams,
-            layersValue: layersValue
+            layersValue: layersValue,
         )
     }
 }
