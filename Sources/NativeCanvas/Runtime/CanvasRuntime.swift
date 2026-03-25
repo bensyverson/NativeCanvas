@@ -7,13 +7,15 @@ import Foundation
 import JavaScriptCore
 
 /// Errors that can occur during canvas engine operations.
-public nonisolated enum CanvasError: Error, CustomStringConvertible {
+public nonisolated enum CanvasError: Error, LocalizedError, CustomStringConvertible {
     /// A JavaScript evaluation failed with the given message.
     case evaluationFailed(String)
     /// A required export (e.g. "schema" or "layers") was not found in the template.
     case missingExport(String)
     /// The `layers` export is not an array or is empty.
     case invalidLayers
+
+    public var errorDescription: String? { description }
 
     public var description: String {
         switch self {

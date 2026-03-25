@@ -100,13 +100,19 @@ extension CanvasBridge {
         let resetTransformBlock: @convention(block) () -> Void = { [weak self] in self?.resetTransform() }
         ctx.setObject(resetTransformBlock, forKeyedSubscript: "resetTransform" as NSString)
 
-        let fillTextBlock: @convention(block) (String, Double, Double) -> Void = { [weak self] text, x, y in
-            self?.fillText(text: text, x: x, y: y)
+        let fillTextBlock: @convention(block) (String, Double, Double, JSValue) -> Void = { [weak self] text, x, y, maxWidthVal in
+            let maxWidth: Double? = (!maxWidthVal.isUndefined && !maxWidthVal.isNull && maxWidthVal.isNumber)
+                ? maxWidthVal.toDouble()
+                : nil
+            self?.fillText(text: text, x: x, y: y, maxWidth: maxWidth)
         }
         ctx.setObject(fillTextBlock, forKeyedSubscript: "fillText" as NSString)
 
-        let strokeTextBlock: @convention(block) (String, Double, Double) -> Void = { [weak self] text, x, y in
-            self?.strokeText(text: text, x: x, y: y)
+        let strokeTextBlock: @convention(block) (String, Double, Double, JSValue) -> Void = { [weak self] text, x, y, maxWidthVal in
+            let maxWidth: Double? = (!maxWidthVal.isUndefined && !maxWidthVal.isNull && maxWidthVal.isNumber)
+                ? maxWidthVal.toDouble()
+                : nil
+            self?.strokeText(text: text, x: x, y: y, maxWidth: maxWidth)
         }
         ctx.setObject(strokeTextBlock, forKeyedSubscript: "strokeText" as NSString)
 

@@ -17,7 +17,22 @@ struct ContentView: View {
         NavigationStack {
             VStack {
                 ZStack(alignment: .center) {
-                    DocumentCanvasView()
+#if canImport(AppKit)
+					HSplitView {
+						DocumentCanvasView()
+						SourceEditorView()
+					}
+#else
+
+					TabView {
+						Tab("View", systemImage: "doc.richtext") {
+							DocumentCanvasView()
+						}
+						Tab("Code", systemImage: "curlybraces") {
+							SourceEditorView()
+						}
+					}
+#endif
                     if coordinator.showHistory {
                         ChatHistoryView()
                     } else {

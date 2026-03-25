@@ -247,6 +247,75 @@ import Testing
             #expect(font == "bold 24px Arial")
         }
 
+        // MARK: - fillText maxWidth
+
+        @Test("fillText with maxWidth squishes text to fit within the specified width")
+        func fillTextMaxWidthConstrainsText() {
+            // Canvas is 200px wide; draw a long string with maxWidth=60.
+            // Pixels beyond x=65 (some slack for anti-aliasing) should be transparent.
+            let bridge = CanvasBridge(width: 200, height: 40)
+            bridge.setFillStyle("#000000")
+            bridge.currentState.fontString = "20px Helvetica"
+            bridge.currentState.textBaseline = "top"
+            bridge.fillText(text: "Hello World Wide", x: 0, y: 0, maxWidth: 60)
+
+            guard let image = bridge.makeImage() else {
+                Issue.record("Failed to create image")
+                return
+            }
+
+            let beyondMaxWidth = hasAnyOpaquePixel(in: image, region: CGRect(x: 65, y: 0, width: 135, height: 40))
+            #expect(!beyondMaxWidth, "Text should be squished inside maxWidth and not bleed past it")
+        }
+
+        @Test("fillText without maxWidth still draws text")
+        func fillTextNoMaxWidthDrawsText() {
+            let bridge = CanvasBridge(width: 200, height: 40)
+            bridge.setFillStyle("#000000")
+            bridge.currentState.fontString = "20px Helvetica"
+            bridge.fillText(text: "Hi", x: 5, y: 25)
+
+            guard let image = bridge.makeImage() else {
+                Issue.record("Failed to create image")
+                return
+            }
+
+            let hasPixels = hasAnyOpaquePixel(in: image, region: CGRect(x: 0, y: 5, width: 50, height: 35))
+            #expect(hasPixels)
+        }
+
+        @Test("JS fillText with 4-arg maxWidth does not throw and draws text")
+        func jsFillTextWithMaxWidth() throws {
+            let bridge = CanvasBridge(width: 200, height: 40)
+            let jsContext = try #require(JSContext())
+            var jsException: String?
+            jsContext.exceptionHandler = { _, ex in jsException = ex?.toString() }
+
+            let ctxValue = try #require(JSValue(newObjectIn: jsContext))
+            bridge.installInto(ctxValue)
+            jsContext.setObject(ctxValue, forKeyedSubscript: "ctx" as NSString)
+
+            jsContext.evaluateScript("""
+                ctx.fillStyle = "black";
+                ctx.font = "20px Helvetica";
+                ctx.textBaseline = "top";
+                ctx.fillText("Hello World Wide", 0, 0, 60);
+            """)
+
+            #expect(jsException == nil, "No JS exception should be thrown")
+
+            guard let image = bridge.makeImage() else {
+                Issue.record("Failed to create image")
+                return
+            }
+
+            let hasPixels = hasAnyOpaquePixel(in: image, region: CGRect(x: 0, y: 0, width: 65, height: 40))
+            #expect(hasPixels, "Text should render within maxWidth region")
+
+            let beyondMaxWidth = hasAnyOpaquePixel(in: image, region: CGRect(x: 65, y: 0, width: 135, height: 40))
+            #expect(!beyondMaxWidth, "Text should not bleed beyond maxWidth")
+        }
+
         // MARK: - State save/restore for text properties
 
         @Test("save/restore preserves font and textAlign")

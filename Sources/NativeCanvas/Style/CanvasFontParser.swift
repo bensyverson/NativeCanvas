@@ -172,19 +172,27 @@ public nonisolated enum CanvasFontParser {
     ]
 
     private static func normalizeFamily(_ family: String) -> String {
-        switch family.lowercased() {
+        // CSS font-family allows comma-separated fallbacks (e.g. "Georgia, serif").
+        // CoreText expects a single family name, so take only the first entry.
+        let primary = family
+            .split(separator: ",", maxSplits: 1)
+            .first
+            .map { $0.trimmingCharacters(in: .whitespaces) }
+            ?? family
+
+        switch primary.lowercased() {
         case "sans-serif", "system-ui":
-            systemFontFamily()
+            return systemFontFamily()
         case "serif":
-            "Times New Roman"
+            return "Times New Roman"
         case "monospace":
-            "Menlo"
+            return "Menlo"
         case "cursive":
-            "Snell Roundhand"
+            return "Snell Roundhand"
         case "fantasy":
-            "Papyrus"
+            return "Papyrus"
         default:
-            family
+            return primary
         }
     }
 

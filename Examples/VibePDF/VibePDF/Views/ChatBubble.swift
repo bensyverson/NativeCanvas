@@ -29,15 +29,22 @@ struct ChatBubble: View {
                     systemImage: "chevron.right",
                 ).font(.caption)
                     .foregroundStyle(.secondary)
+					.padding(.vertical, 2)
+					.padding(.horizontal, 10)
+					.background(.regularMaterial)
+					.clipShape(.capsule)
                 Spacer()
             }
         case .system:
             HStack {
-                Spacer()
                 Text(message.text)
                     .font(.caption)
                     .italic()
-                    .foregroundStyle(.secondary)
+					.foregroundStyle(.secondary)
+					.padding(.vertical, 2)
+					.padding(.horizontal, 10)
+					.background(.regularMaterial)
+					.clipShape(.capsule)
                 Spacer()
             }
         }

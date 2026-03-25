@@ -103,5 +103,21 @@ import Testing
             let family = CTFontCopyFamilyName(font) as String
             #expect(family == "Menlo")
         }
+
+        @Test("Strips CSS fallback list, using only the first family")
+        func commaFallbackFamilyUsesFirstEntry() {
+            let font = CanvasFontParser.parse("18px Georgia, serif")
+            let family = CTFontCopyFamilyName(font) as String
+            #expect(family == "Georgia")
+        }
+
+        @Test("Italic with comma fallback family applies italic trait")
+        func italicWithCommaFallback() {
+            let font = CanvasFontParser.parse("italic 18px Georgia, serif")
+            let family = CTFontCopyFamilyName(font) as String
+            #expect(family == "Georgia")
+            let traits = CTFontGetSymbolicTraits(font)
+            #expect(traits.contains(.italicTrait))
+        }
     }
 #endif
