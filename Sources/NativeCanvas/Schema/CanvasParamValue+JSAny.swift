@@ -5,9 +5,9 @@
 
 import JavaScriptCore
 
-extension CanvasParamValue {
+public extension CanvasParamValue {
     /// Extracts a `CanvasParamValue` from a JSValue by inspecting its JS type.
-    public nonisolated static func from(_ jsValue: JSValue) -> CanvasParamValue {
+    nonisolated static func from(_ jsValue: JSValue) -> CanvasParamValue {
         if jsValue.isNull || jsValue.isUndefined {
             return .null
         }

@@ -7,9 +7,9 @@ import CoreGraphics
 import CoreText
 import Foundation
 
-extension CanvasBridge {
+public extension CanvasBridge {
     /// Fills text at the given position using the current fill style and font.
-    public func fillText(text: String, x: Double, y: Double) {
+    func fillText(text: String, x: Double, y: Double) {
         let ctFont = CanvasFontParser.parse(currentState.fontString)
         let attrs: [NSAttributedString.Key: Any] = [
             .font: ctFont,
@@ -36,7 +36,7 @@ extension CanvasBridge {
     }
 
     /// Strokes text outlines at the given position using the current stroke style and font.
-    public func strokeText(text: String, x: Double, y: Double) {
+    func strokeText(text: String, x: Double, y: Double) {
         let ctFont = CanvasFontParser.parse(currentState.fontString)
         let strokeWidth = max(currentState.lineWidth, 1.0)
         let attrs: [NSAttributedString.Key: Any] = [
@@ -65,7 +65,7 @@ extension CanvasBridge {
     }
 
     /// Measures text width using the current font.
-    public func measureText(_ text: String) -> [String: Double] {
+    func measureText(_ text: String) -> [String: Double] {
         let ctFont = CanvasFontParser.parse(currentState.fontString)
         let attrs: [NSAttributedString.Key: Any] = [.font: ctFont]
         let attrString = NSAttributedString(string: text, attributes: attrs)
@@ -80,7 +80,7 @@ extension CanvasBridge {
 
     // MARK: - Text Positioning Helpers
 
-    func applyTextAlign(x: CGFloat, width: CGFloat) -> CGFloat {
+    internal func applyTextAlign(x: CGFloat, width: CGFloat) -> CGFloat {
         switch currentState.textAlign {
         case "center": x - width / 2
         case "right", "end": x - width
@@ -88,7 +88,7 @@ extension CanvasBridge {
         }
     }
 
-    func applyTextBaseline(y: CGFloat, ascent: CGFloat, descent: CGFloat) -> CGFloat {
+    internal func applyTextBaseline(y: CGFloat, ascent: CGFloat, descent: CGFloat) -> CGFloat {
         switch currentState.textBaseline {
         case "top", "hanging": y + ascent
         case "middle": y + (ascent - descent) / 2

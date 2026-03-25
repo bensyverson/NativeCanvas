@@ -114,7 +114,7 @@ public final nonisolated class CanvasBridge {
             bitsPerComponent: bitsPerComponent,
             bytesPerRow: bytesPerRow,
             space: resolvedColorSpace,
-            bitmapInfo: bitmapInfo.rawValue
+            bitmapInfo: bitmapInfo.rawValue,
         ) else {
             fatalError("Failed to create CGContext (\(width)×\(height), profile: \(profile))")
         }
@@ -145,12 +145,11 @@ public final nonisolated class CanvasBridge {
         self.profile = profile
         cgContext = context
 
-        let resolvedColorSpace: CGColorSpace
-        switch profile {
+        let resolvedColorSpace: CGColorSpace = switch profile {
         case .display:
-            resolvedColorSpace = CGColorSpaceCreateDeviceRGB()
+            CGColorSpaceCreateDeviceRGB()
         case .hdr:
-            resolvedColorSpace = CGColorSpace(name: CGColorSpace.extendedLinearSRGB)!
+            CGColorSpace(name: CGColorSpace.extendedLinearSRGB)!
         }
         colorSpace = resolvedColorSpace
         currentState = CanvasState(colorSpace: resolvedColorSpace)
@@ -331,16 +330,24 @@ public final nonisolated class CanvasBridge {
     // MARK: - Path Operations
 
     /// Begins a new path, discarding any existing path.
-    public func beginPath() { currentPath = CGMutablePath() }
+    public func beginPath() {
+        currentPath = CGMutablePath()
+    }
 
     /// Moves the current point to the specified coordinates.
-    public func moveTo(x: Double, y: Double) { currentPath.move(to: CGPoint(x: x, y: y)) }
+    public func moveTo(x: Double, y: Double) {
+        currentPath.move(to: CGPoint(x: x, y: y))
+    }
 
     /// Draws a line from the current point to the specified coordinates.
-    public func lineTo(x: Double, y: Double) { currentPath.addLine(to: CGPoint(x: x, y: y)) }
+    public func lineTo(x: Double, y: Double) {
+        currentPath.addLine(to: CGPoint(x: x, y: y))
+    }
 
     /// Closes the current subpath by drawing a line to the starting point.
-    public func closePath() { currentPath.closeSubpath() }
+    public func closePath() {
+        currentPath.closeSubpath()
+    }
 
     /// Adds a cubic Bezier curve from the current point.
     public func bezierCurveTo(cp1x: Double, cp1y: Double, cp2x: Double, cp2y: Double, x: Double, y: Double) {
@@ -411,13 +418,19 @@ public final nonisolated class CanvasBridge {
     // MARK: - Transform Operations
 
     /// Translates the coordinate system.
-    public func translate(x: Double, y: Double) { cgContext.translateBy(x: CGFloat(x), y: CGFloat(y)) }
+    public func translate(x: Double, y: Double) {
+        cgContext.translateBy(x: CGFloat(x), y: CGFloat(y))
+    }
 
     /// Rotates the coordinate system by the given angle in radians.
-    public func rotate(angle: Double) { cgContext.rotate(by: CGFloat(angle)) }
+    public func rotate(angle: Double) {
+        cgContext.rotate(by: CGFloat(angle))
+    }
 
     /// Scales the coordinate system.
-    public func scale(x: Double, y: Double) { cgContext.scaleBy(x: CGFloat(x), y: CGFloat(y)) }
+    public func scale(x: Double, y: Double) {
+        cgContext.scaleBy(x: CGFloat(x), y: CGFloat(y))
+    }
 
     /// Sets the transform matrix (relative to the base flipped coordinate system).
     public func setTransform(a: Double, b: Double, c: Double, d: Double, e: Double, f: Double) {
@@ -426,7 +439,9 @@ public final nonisolated class CanvasBridge {
     }
 
     /// Resets the transform to the identity (relative to the base flipped coordinate system).
-    public func resetTransform() { resetToBaseTransform() }
+    public func resetTransform() {
+        resetToBaseTransform()
+    }
 
     private func resetToBaseTransform() {
         let currentCTM = cgContext.ctm

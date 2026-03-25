@@ -159,7 +159,7 @@ public nonisolated enum CanvasFontParser {
         let resolvedFamily = CTFontCopyFamilyName(font) as String
         if resolvedFamily != normalizedFamily, !genericFamilies.contains(normalizedFamily.lowercased()) {
             let simpleDescriptor = CTFontDescriptorCreateWithAttributes(
-                [kCTFontFamilyNameAttribute: normalizedFamily, kCTFontSizeAttribute: size] as CFDictionary
+                [kCTFontFamilyNameAttribute: normalizedFamily, kCTFontSizeAttribute: size] as CFDictionary,
             )
             return CTFontCreateWithFontDescriptor(simpleDescriptor, size, nil)
         }
@@ -196,7 +196,7 @@ public nonisolated enum CanvasFontParser {
     private static func defaultFont() -> CTFont {
         let systemFamily = systemFontFamily()
         let descriptor = CTFontDescriptorCreateWithAttributes(
-            [kCTFontFamilyNameAttribute: systemFamily, kCTFontSizeAttribute: 10.0] as CFDictionary
+            [kCTFontFamilyNameAttribute: systemFamily, kCTFontSizeAttribute: 10.0] as CFDictionary,
         )
         return CTFontCreateWithFontDescriptor(descriptor, 10, nil)
     }

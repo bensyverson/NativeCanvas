@@ -228,7 +228,7 @@ struct CanvasStandardLibraryTests {
             bitsPerComponent: 32,
             bytesPerRow: bytesPerRow,
             space: colorSpace,
-            bitmapInfo: bitmapInfo.rawValue
+            bitmapInfo: bitmapInfo.rawValue,
         ) else {
             return (0, 0, 0, 0)
         }

@@ -23,7 +23,7 @@ struct CanvasRendererTests {
             bitsPerComponent: 32,
             bytesPerRow: width * 16,
             space: colorSpace,
-            bitmapInfo: bitmapInfo.rawValue
+            bitmapInfo: bitmapInfo.rawValue,
         ) else { return (0, 0, 0, 0) }
         ctx.draw(image, in: CGRect(x: 0, y: 0, width: width, height: height))
         let offset = (y * width + x) * 4
@@ -43,7 +43,7 @@ struct CanvasRendererTests {
             bitsPerComponent: 32,
             bytesPerRow: width * 16,
             space: colorSpace,
-            bitmapInfo: bitmapInfo.rawValue
+            bitmapInfo: bitmapInfo.rawValue,
         ) else { return false }
         ctx.draw(image, in: CGRect(x: 0, y: 0, width: width, height: height))
 
@@ -209,7 +209,7 @@ struct CanvasRendererTests {
         let image = try CanvasRenderer.render(
             source: source,
             scene: scene,
-            viewport: viewport100
+            viewport: viewport100,
         )
 
         let pixel = pixelColor(at: 50, y: 50, in: image)

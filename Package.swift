@@ -13,19 +13,19 @@ let package = Package(
         // Products define the executables and libraries a package produces, making them visible to other packages.
         .library(
             name: "NativeCanvas",
-            targets: ["NativeCanvas"]
+            targets: ["NativeCanvas"],
         ),
     ],
     targets: [
         // Targets are the basic building blocks of a package, defining a module or a test suite.
         // Targets can depend on other targets in this package and products from dependencies.
         .target(
-            name: "NativeCanvas"
+            name: "NativeCanvas",
         ),
         .testTarget(
             name: "NativeCanvasTests",
-            dependencies: ["NativeCanvas"]
+            dependencies: ["NativeCanvas"],
         ),
     ],
-    swiftLanguageModes: [.v6]
+    swiftLanguageModes: [.v6],
 )

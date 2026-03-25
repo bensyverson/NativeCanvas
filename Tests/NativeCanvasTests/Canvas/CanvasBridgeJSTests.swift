@@ -27,7 +27,7 @@ struct CanvasBridgeJSTests {
             bitsPerComponent: 32,
             bytesPerRow: width * 16,
             space: colorSpace,
-            bitmapInfo: bitmapInfo.rawValue
+            bitmapInfo: bitmapInfo.rawValue,
         ) else {
             return (0, 0, 0, 0)
         }

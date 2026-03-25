@@ -5,14 +5,14 @@
 
 import CoreGraphics
 
-extension CanvasBridge {
+public extension CanvasBridge {
     /// Draws an image at the specified position at its natural size.
-    public func drawImage(image: CGImage, dx: Double, dy: Double) {
+    func drawImage(image: CGImage, dx: Double, dy: Double) {
         drawImage(image: image, dx: dx, dy: dy, dw: Double(image.width), dh: Double(image.height))
     }
 
     /// Draws an image scaled to the specified destination rectangle.
-    public func drawImage(image: CGImage, dx: Double, dy: Double, dw: Double, dh: Double) {
+    func drawImage(image: CGImage, dx: Double, dy: Double, dw: Double, dh: Double) {
         cgContext.saveGState()
         applyShadow()
         cgContext.setAlpha(currentState.globalAlpha)
@@ -23,14 +23,14 @@ extension CanvasBridge {
     }
 
     /// Draws a cropped region of an image into a destination rectangle.
-    public func drawImage(image: CGImage, sx: Double, sy: Double, sw: Double, sh: Double, dx: Double, dy: Double, dw: Double, dh: Double) {
+    func drawImage(image: CGImage, sx: Double, sy: Double, sw: Double, sh: Double, dx: Double, dy: Double, dw: Double, dh: Double) {
         let sourceRect = CGRect(x: sx, y: sy, width: sw, height: sh)
         guard let croppedImage = image.cropping(to: sourceRect) else { return }
         drawImage(image: croppedImage, dx: dx, dy: dy, dw: dw, dh: dh)
     }
 
     /// Draws a registered image by key. Dispatches to the correct overload based on argument count.
-    public func drawImageByKey(_ key: String, args: [Double]) {
+    func drawImageByKey(_ key: String, args: [Double]) {
         guard let image = registeredImage(forKey: key) else { return }
 
         switch args.count {

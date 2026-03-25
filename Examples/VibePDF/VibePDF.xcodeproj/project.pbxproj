@@ -6,6 +6,11 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		B563FF7E2F73367D00287CBE /* Operator in Frameworks */ = {isa = PBXBuildFile; productRef = B563FF7D2F73367D00287CBE /* Operator */; };
+		B563FF812F73369600287CBE /* NativeCanvas in Frameworks */ = {isa = PBXBuildFile; productRef = B563FF802F73369600287CBE /* NativeCanvas */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXContainerItemProxy section */
 		B563FF602F73355400287CBE /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -52,6 +57,8 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				B563FF7E2F73367D00287CBE /* Operator in Frameworks */,
+				B563FF812F73369600287CBE /* NativeCanvas in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -112,6 +119,8 @@
 			);
 			name = VibePDF;
 			packageProductDependencies = (
+				B563FF7D2F73367D00287CBE /* Operator */,
+				B563FF802F73369600287CBE /* NativeCanvas */,
 			);
 			productName = VibePDF;
 			productReference = B563FF522F73355200287CBE /* VibePDF.app */;
@@ -195,6 +204,10 @@
 			);
 			mainGroup = B563FF492F73355200287CBE;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				B563FF7C2F73367C00287CBE /* XCRemoteSwiftPackageReference "Operator" */,
+				B563FF7F2F73369600287CBE /* XCLocalSwiftPackageReference "../../../NativeCanvas" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = B563FF532F73355200287CBE /* Products */;
 			projectDirPath = "";
@@ -395,8 +408,18 @@
 				DEVELOPMENT_TEAM = QJ3Q58XVEE;
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_INCOMING_NETWORK_CONNECTIONS = NO;
+				ENABLE_OUTGOING_NETWORK_CONNECTIONS = YES;
 				ENABLE_PREVIEWS = YES;
-				ENABLE_USER_SELECTED_FILES = readonly;
+				ENABLE_RESOURCE_ACCESS_AUDIO_INPUT = NO;
+				ENABLE_RESOURCE_ACCESS_BLUETOOTH = NO;
+				ENABLE_RESOURCE_ACCESS_CALENDARS = NO;
+				ENABLE_RESOURCE_ACCESS_CAMERA = NO;
+				ENABLE_RESOURCE_ACCESS_CONTACTS = NO;
+				ENABLE_RESOURCE_ACCESS_LOCATION = NO;
+				ENABLE_RESOURCE_ACCESS_PRINTING = NO;
+				ENABLE_RESOURCE_ACCESS_USB = NO;
+				ENABLE_USER_SELECTED_FILES = readwrite;
 				GENERATE_INFOPLIST_FILE = YES;
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphonesimulator*]" = YES;
@@ -439,8 +462,18 @@
 				DEVELOPMENT_TEAM = QJ3Q58XVEE;
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_INCOMING_NETWORK_CONNECTIONS = NO;
+				ENABLE_OUTGOING_NETWORK_CONNECTIONS = YES;
 				ENABLE_PREVIEWS = YES;
-				ENABLE_USER_SELECTED_FILES = readonly;
+				ENABLE_RESOURCE_ACCESS_AUDIO_INPUT = NO;
+				ENABLE_RESOURCE_ACCESS_BLUETOOTH = NO;
+				ENABLE_RESOURCE_ACCESS_CALENDARS = NO;
+				ENABLE_RESOURCE_ACCESS_CAMERA = NO;
+				ENABLE_RESOURCE_ACCESS_CONTACTS = NO;
+				ENABLE_RESOURCE_ACCESS_LOCATION = NO;
+				ENABLE_RESOURCE_ACCESS_PRINTING = NO;
+				ENABLE_RESOURCE_ACCESS_USB = NO;
+				ENABLE_USER_SELECTED_FILES = readwrite;
 				GENERATE_INFOPLIST_FILE = YES;
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphonesimulator*]" = YES;
@@ -615,6 +648,36 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCLocalSwiftPackageReference section */
+		B563FF7F2F73369600287CBE /* XCLocalSwiftPackageReference "../../../NativeCanvas" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = ../../../NativeCanvas;
+		};
+/* End XCLocalSwiftPackageReference section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		B563FF7C2F73367C00287CBE /* XCRemoteSwiftPackageReference "Operator" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/bensyverson/Operator";
+			requirement = {
+				branch = main;
+				kind = branch;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		B563FF7D2F73367D00287CBE /* Operator */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = B563FF7C2F73367C00287CBE /* XCRemoteSwiftPackageReference "Operator" */;
+			productName = Operator;
+		};
+		B563FF802F73369600287CBE /* NativeCanvas */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = NativeCanvas;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = B563FF4A2F73355200287CBE /* Project object */;
 }

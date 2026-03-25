@@ -5,9 +5,9 @@
 
 import JavaScriptCore
 
-extension CanvasParamDef {
+public extension CanvasParamDef {
     /// Extracts a `CanvasParamDef` from a JSValue representing a single param definition.
-    public nonisolated static func from(_ jsValue: JSValue) -> CanvasParamDef {
+    nonisolated static func from(_ jsValue: JSValue) -> CanvasParamDef {
         let typeStr = jsValue.forProperty("type")?.toString() ?? "string"
         let type = CanvasParamType(rawString: typeStr)
 
@@ -44,7 +44,7 @@ extension CanvasParamDef {
             min: min,
             max: max,
             options: options,
-            animatable: animatable
+            animatable: animatable,
         )
     }
 }

@@ -78,7 +78,7 @@ struct CanvasViewportTests {
         let vp = CanvasViewport(width: 1920, height: 1080)
         let image = try CanvasRenderer.render(source: source, viewport: vp)
 
-        let colorSpace = CGColorSpace(name: CGColorSpace.extendedLinearSRGB)!
+        let colorSpace = try #require(CGColorSpace(name: CGColorSpace.extendedLinearSRGB))
         let bitmapInfo = CGBitmapInfo(rawValue: CGBitmapInfo.floatComponents.rawValue | CGImageAlphaInfo.premultipliedLast.rawValue | CGBitmapInfo.byteOrder32Little.rawValue)
         var pixelData = [Float](repeating: 0, count: image.width * image.height * 4)
         let ctx = CGContext(data: &pixelData, width: image.width, height: image.height, bitsPerComponent: 32, bytesPerRow: image.width * 16, space: colorSpace, bitmapInfo: bitmapInfo.rawValue)!
@@ -126,7 +126,7 @@ struct CanvasViewportTests {
         let vp = CanvasViewport(width: 100, height: 100, safeArea: insets)
         let image = try CanvasRenderer.render(source: source, viewport: vp)
 
-        let colorSpace = CGColorSpace(name: CGColorSpace.extendedLinearSRGB)!
+        let colorSpace = try #require(CGColorSpace(name: CGColorSpace.extendedLinearSRGB))
         let bitmapInfo = CGBitmapInfo(rawValue: CGBitmapInfo.floatComponents.rawValue | CGImageAlphaInfo.premultipliedLast.rawValue | CGBitmapInfo.byteOrder32Little.rawValue)
         var pixelData = [Float](repeating: 0, count: 100 * 100 * 4)
         let ctx = CGContext(data: &pixelData, width: 100, height: 100, bitsPerComponent: 32, bytesPerRow: 100 * 16, space: colorSpace, bitmapInfo: bitmapInfo.rawValue)!
@@ -151,7 +151,7 @@ struct CanvasViewportTests {
         """
         let image = try CanvasRenderer.render(source: source, at: 0.75, frame: 30, viewport: CanvasViewport(width: 50, height: 50))
 
-        let colorSpace = CGColorSpace(name: CGColorSpace.extendedLinearSRGB)!
+        let colorSpace = try #require(CGColorSpace(name: CGColorSpace.extendedLinearSRGB))
         let bitmapInfo = CGBitmapInfo(rawValue: CGBitmapInfo.floatComponents.rawValue | CGImageAlphaInfo.premultipliedLast.rawValue | CGBitmapInfo.byteOrder32Little.rawValue)
         var pixelData = [Float](repeating: 0, count: 50 * 50 * 4)
         let ctx = CGContext(data: &pixelData, width: 50, height: 50, bitsPerComponent: 32, bytesPerRow: 50 * 16, space: colorSpace, bitmapInfo: bitmapInfo.rawValue)!
