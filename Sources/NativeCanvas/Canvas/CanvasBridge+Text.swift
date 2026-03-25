@@ -47,12 +47,17 @@ public extension CanvasBridge {
                 .scaledBy(x: scaleX < 1.0 ? scaleX : 1.0, y: -1)
             let positionedPath = glyphPath.copy(using: &transform) ?? glyphPath
 
+            // A transparency layer is needed so the shadow is cast by the
+            // composite text shape rather than by the gradient draw alone.
+            // Without it, shadow pixels fall outside the clip and are invisible.
             cgContext.saveGState()
             applyShadow()
             cgContext.setAlpha(currentState.globalAlpha)
+            cgContext.beginTransparencyLayer(auxiliaryInfo: nil)
             cgContext.addPath(positionedPath)
             cgContext.clip()
             drawGradient(gradient)
+            cgContext.endTransparencyLayer()
             cgContext.restoreGState()
         } else {
             // Solid color branch (unchanged).

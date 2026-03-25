@@ -192,5 +192,39 @@ import Testing
             let rightChannels = maxChannels(in: image, region: CGRect(x: 120, y: 0, width: 80, height: 60))
             #expect(rightChannels.maxB > 0.3, "Right side should be blue")
         }
+
+        // MARK: - Gradient fillText with shadow
+
+        @Test("fillText with gradient preserves shadow")
+        func fillTextWithGradientAndShadow() throws {
+            // Draw gradient text with a rightward shadow on a canvas wide enough
+            // that the shadow lands in empty space to the right of the text.
+            let bridge = CanvasBridge(width: 200, height: 60)
+
+            let gradient = bridge.createLinearGradient(x0: 0, y0: 0, x1: 100, y1: 0)
+            let cs = bridge.colorSpace
+            try gradient.addColorStop(offset: 0, color: #require(CGColor(colorSpace: cs, components: [1, 0, 0, 1])))
+            try gradient.addColorStop(offset: 1, color: #require(CGColor(colorSpace: cs, components: [0, 0, 1, 1])))
+            bridge.fillGradient = gradient
+
+            bridge.shadowColorString = "rgba(0, 0, 0, 1)"
+            bridge.shadowOffsetX = 30
+            bridge.shadowOffsetY = 0
+            bridge.shadowBlur = 0
+
+            bridge.currentState.fontString = "bold 40px Helvetica"
+            bridge.fillText(text: "A", x: 0, y: 45)
+
+            guard let image = bridge.makeImage() else {
+                Issue.record("Failed to create image")
+                return
+            }
+
+            // The glyph "A" in bold 40px is ~30px wide, starting at x=0.
+            // The shadow is offset 30px to the right, so shadow pixels should
+            // appear around x=50–70 (well past the glyph itself).
+            let shadowRegion = hasAnyOpaquePixel(in: image, region: CGRect(x: 50, y: 5, width: 30, height: 50))
+            #expect(shadowRegion, "Shadow pixels should appear to the right of the gradient-filled glyph")
+        }
     }
 #endif
