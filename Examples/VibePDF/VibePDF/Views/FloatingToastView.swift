@@ -30,15 +30,15 @@ struct FloatingToastView: View {
                     .padding(.horizontal, 24)
                     .padding(.bottom, 8)
                     .frame(minWidth: 50, maxWidth: 400)
-                    .transition(.move(edge: .top).combined(with: .opacity))
+                    .transition(.opacity)
             } else if showThinking {
                 ThinkingBubble(label: thinkingLabel)
                     .padding(.bottom, 8)
-                    .transition(.move(edge: .top).combined(with: .opacity))
+                    .transition(.opacity)
             }
         }
-        .animation(.easeInOut(duration: 0.3), value: visibleText)
-        .animation(.easeInOut(duration: 0.3), value: showThinking)
+        .animation(.easeInOut(duration: 0.4), value: visibleText != nil)
+        .animation(.easeInOut(duration: 0.4), value: showThinking)
         // When the agent starts running, immediately clear any stale toast so
         // the ThinkingBubble can appear without waiting for a messages change.
         .onChange(of: coordinator.isAgentRunning) { _, running in
@@ -60,9 +60,10 @@ struct FloatingToastView: View {
                 cancelAndClear()
                 return
             }
-            // Tool calls clear the toast so the ThinkingBubble can show.
+            // Tool call or end of streaming → linger briefly then fade to
+            // ThinkingBubble, rather than snapping away instantly.
             if let last = messages.last, last.role == .toolCall {
-                cancelAndClear()
+                scheduleLinger(for: .milliseconds(500))
                 return
             }
             guard let agentMsg = messages.last(where: { $0.role == .agent }) else { return }
@@ -74,7 +75,7 @@ struct FloatingToastView: View {
                 // Agent finished streaming text but is still running (about to
                 // think or call a tool). Linger briefly so the user can read,
                 // then clear so the ThinkingBubble can appear.
-                scheduleLinger()
+                scheduleLinger(for: .seconds(3.0))
             }
         }
     }
@@ -85,12 +86,12 @@ struct FloatingToastView: View {
         withAnimation { visibleText = nil }
     }
 
-    /// Keeps the current toast visible briefly, then clears it so the
+    /// Keeps the current toast visible for `duration`, then fades it out so the
     /// ThinkingBubble can appear while the agent is still running.
-    private func scheduleLinger() {
+    private func scheduleLinger(for duration: Duration) {
         guard dismissTask == nil else { return }
         dismissTask = Task {
-            try? await Task.sleep(for: .seconds(1.5))
+            try? await Task.sleep(for: duration)
             guard !Task.isCancelled else { return }
             withAnimation { visibleText = nil }
             dismissTask = nil

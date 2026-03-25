@@ -130,7 +130,7 @@ import Operator
         Workflow:
         1. Use read_script before making changes
         2. Use write_script to create or fully replace a script.
-        3. Use edit_script for targeted changes (find old string, replace with new).
+        3. Use edit_script for targeted changes (find old string, replace with new). When possible, edit rather than creating a brand new script.
         4. Always use view_canvas (if available) to visually verify your changes.
 
         Style notes:
@@ -223,7 +223,7 @@ import Operator
         var toolCallArgs: [Int: String] = [:]
         // Throttle script streaming updates to avoid overwhelming SwiftUI.
         var lastStreamUpdate: ContinuousClock.Instant = .now
-        let streamInterval: Duration = .milliseconds(100)
+        let streamInterval: Duration = .milliseconds(250)
 
         defer {
             // Always finalize any in-flight streaming message so the UI cleans up.
@@ -249,6 +249,7 @@ import Operator
 
         do {
             for try await operation in stream {
+                guard !Task.isCancelled else { break }
                 switch operation {
                 case let .text(chunk):
                     if let agentID = currentAgentMessageID,
