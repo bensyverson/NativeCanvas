@@ -10,7 +10,7 @@ import JavaScriptCore
 ///
 /// `CanvasBridge` wraps a `CGContext` and exposes Canvas 2D methods
 /// (rects, paths, transforms, state management) that JavaScript templates call
-/// through the JSCore integration layer in ``CanvasBridge+JSCore``.
+/// through the JSCore integration layer in ``installInto(_:)``.
 ///
 /// The context uses a top-left origin coordinate system (Y increases downward),
 /// matching the Canvas 2D convention. The ``RenderingProfile`` controls the

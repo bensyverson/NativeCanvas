@@ -4,18 +4,18 @@ Author JavaScript templates that NativeCanvas can render.
 
 ## Template Contract
 
-A NativeCanvas template is a plain JavaScript file (or string) that must export
-two globals after evaluation:
+A NativeCanvas template is a plain JavaScript file (or string) that exports
+globals after evaluation:
 
 | Global | Type | Description |
 |--------|------|-------------|
-| `schema` | Object | Template metadata and parameter definitions, produced by `nc.schema({...})` |
+| `schema` | Object | Template metadata and parameter definitions (optional) |
 | `layers` | Array | One or more layer objects, each with a `render` function |
 
 A minimal template skeleton looks like this:
 
 ```javascript
-nc.schema({
+var schema = {
     name: "My Template",
     description: "What this template does",
     version: "1.0.0",
@@ -25,7 +25,7 @@ nc.schema({
         title: { type: "string", default: "Hello" },
         fontSize: { type: "float", default: 48, min: 12, max: 200, animatable: true }
     }
-});
+};
 
 var layers = [
     {
@@ -48,25 +48,33 @@ var layers = [
 
 ## Schema Declaration
 
-Call `nc.schema({...})` at the top of your template. The `nc.schema` function
-registers its argument as the `schema` global and returns it, so the call is
-self-contained.
+Declare a `schema` variable at the top of your template. The schema is **optional**—if
+omitted, the template name defaults to `"Untitled"` and parameters will be empty.
+
+```javascript
+var schema = {
+    name: "My Template",
+    params: {
+        title: { type: "string", default: "Hello" }
+    }
+};
+```
 
 ### Required fields
 
 | Field | Type | Description |
 |-------|------|-------------|
 | `name` | string | Display name shown in the host UI |
-| `description` | string | Short description of the template |
-| `version` | string | Semantic version, e.g. `"1.0.0"` |
-| `category` | string | Grouping category, e.g. `"Lower Thirds"` |
-| `tags` | string[] | Searchable tags |
 | `params` | object | Parameter definitions (see below) |
 
 ### Optional fields
 
 | Field | Type | Description |
 |-------|------|-------------|
+| `description` | string | Short description of the template |
+| `version` | string | Semantic version, e.g. `"1.0.0"` (default: `"1.0.0"`) |
+| `category` | string | Grouping category, e.g. `"Lower Thirds"` (default: `"Uncategorized"`) |
+| `tags` | string[] | Searchable tags (default: `[]`) |
 | `author` | `{ name, url? }` | Author credit |
 | `paramGroups` | `{ [groupName]: string[] }` | Groups param keys into named sections for UI |
 | `defaultDuration` | number | Suggested duration in seconds |
@@ -159,13 +167,16 @@ These functions call into CoreText and are available on Apple platforms only:
 
 ```javascript
 // Returns { width, height } in pixels
-nc.measureText(text, fontFamily, size)
+// font is a full CSS font string, e.g. 'bold 32px "Georgia"'
+nc.measureText(text, font)
 
 // Returns an array of lines that fit within maxWidth
-nc.wrapText(text, maxWidth, fontFamily, size)
+// font is a full CSS font string, e.g. '14px "Georgia"'
+nc.wrapText(text, maxWidth, font)
 
 // Returns the largest font size (in points) that fits text within maxWidth
-nc.fitText(text, maxWidth, fontFamily)
+// style is an optional CSS weight/style prefix, e.g. "bold" or "italic bold"
+nc.fitText(text, maxWidth, fontFamily, style?)
 ```
 
 ### Drawing Helpers

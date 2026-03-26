@@ -15,8 +15,8 @@ that wires them together for a single render call.
 └─────────────────────┬──────────────┬─────────────────┘
                       │              │
           ┌───────────▼────┐  ┌──────▼──────────────┐
-          │  CanvasRuntime │  │    CanvasBridge      │
-          │  (JSContext)   │  │    (CGContext)        │
+          │  CanvasRuntime │  │    CanvasBridge     │
+          │  (JSContext)   │  │    (CGContext)      │
           └───────────┬────┘  └─────────────────────┘
                       │
               ┌───────▼────────┐
@@ -92,8 +92,8 @@ their content for device bezels or broadcast title-safe zones.
 
 ## Schema & Parameters
 
-Templates declare their user-editable parameters through a `nc.schema({...})` call.
-NativeCanvas parses this into a ``CanvasSchema`` which contains an ordered list of
+Templates optionally declare their user-editable parameters through a `var schema = {...}`
+global. NativeCanvas parses this into a ``CanvasSchema`` which contains an ordered list of
 ``CanvasParamDef`` entries, each with a ``CanvasParamType`` and default
 ``CanvasParamValue``. Host applications can read the schema to render editor UIs
 and pass overridden values back to the renderer.

@@ -15,7 +15,7 @@ Add NativeCanvas to your package using Swift Package Manager:
 ```swift
 // In Package.swift
 dependencies: [
-    .package(url: "https://github.com/your-org/NativeCanvas", from: "1.0.0")
+    .package(url: "https://github.com/your-org/NativeCanvas", branch: "main")
 ],
 targets: [
     .target(
@@ -34,14 +34,10 @@ and returns a `CGImage`:
 import NativeCanvas
 
 let js = """
-nc.schema({
+var schema = {
     name: "Hello World",
-    description: "A simple greeting graphic",
-    version: "1.0.0",
-    category: "Example",
-    tags: [],
     params: {}
-});
+};
 
 var layers = [{
     name: "background",
